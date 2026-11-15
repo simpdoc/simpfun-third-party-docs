@@ -1,0 +1,111 @@
+---
+title: "geyser-fabric互通整合包"
+author: "ideafox"
+license: "CC BY-NC-SA 4.0"
+---
+## **适用于简幻欢的Java-Geyser互通整合包，内含登录，carpet等，与一众bukkit系互通服务器相比，更适合生电玩法！**
+
+实际上你要懂的话只要是Linux环境都能跑
+
+## **MC版本**
+
+📕Minecraft-JE版本：1.21.4  
+📕Minecraft-BE版本：1.21.40 - 1.21.44 - 1.21.70
+
+## **部署方法**
+
+**当前已上线至简幻欢第三方镜像，可直接从简幻欢官网部署使用！****前往新建/重装页，点击第三方镜像->Minecraft互通，即可找到使用！****启动服务端，即可畅玩!**
+
+## **mod列表**
+
+-   **Geyser: [https://www.mcmod.cn/class/9757.html](https://www.mcmod.cn/class/9757.html)**
+    
+-   **FloodGate**: [https://geysermc.org/download?project=floodgate](https://geysermc.org/download?project=floodgate)
+    
+-   **Chunky:** **[https://www.mcmod.cn/class/6239.html](https://www.mcmod.cn/class/6239.html)**
+    
+-   **EasyAuth: [https://www.mcmod.cn/class/6241.html](https://www.mcmod.cn/class/6241.html)**
+    
+-   **Essential-Commands: [https://www.mcmod.cn/class/4493.html](https://www.mcmod.cn/class/4493.html)**
+    
+-   **Carpet: [https://www.mcmod.cn/class/2361.html](https://www.mcmod.cn/class/2361.html)**
+    
+-   **MiniMOTD: [https://www.mcmod.cn/class/15787.html](https://www.mcmod.cn/class/15787.html)**
+    
+-   **席地而坐：[https://www.mcmod.cn/class/1656.html](https://www.mcmod.cn/class/1656.html)**
+    
+-   **Skin Restorer: [https://www.mcmod.cn/class/6867.html](https://www.mcmod.cn/class/6867.html)**
+    
+-   **Spark:[https://www.mcmod.cn/class/4073.html](https://www.mcmod.cn/class/4073.html)**
+    
+
+## **常用命令**
+
+-   （仅离线玩家）注册
+    
+    ```plaintext
+    /register <password> <password>
+    ```
+    
+-   （仅离线玩家）登录
+    
+    ```plaintext
+    /login <password>
+    ```
+    
+-   （仅离线玩家）更改密码
+    
+    ```plaintext
+    /changePassword <old password> <new password
+    ```
+    
+-   设置自己的皮肤
+    
+    ```plaintext
+    使用其他正版玩家的皮肤：
+    /skin set mojang 正版玩家皮肤的用户名
+    使用web上的皮肤：
+    /skin set web 皮肤类型(classic/slim) "url" 
+    举例：
+    /skin set web classic "https://example.cn/skin.png"
+    ```
+    
+-   传送请求相关
+    
+    ```plaintext
+    /tpa <目标玩家> 请求传送到 xxx 玩家
+    /tpahere <目标玩家> 请求玩家传送到你这儿
+    /tpaccept <目标玩家> 接受传送请求
+    /tpdeny <目标玩家> 拒绝传送请求
+    ```
+    
+-   设置家相关
+    
+    ```plaintext
+    /home set <名称>  设置家
+    /home list   显示所有已保存位置的家
+    /home tp <名称> 传送至家（注：如果只设置了一个家，可以不写家的名称这个参数）
+    /home delete <名称> 删除家
+    ```
+    
+-   其它传送相关
+    
+    ```plaintext
+    /back   返回传送前的位置
+    /rtp 或 /randomteleport 传送至随机位置
+    ```
+    
+-   更多essential相关命令可查阅：**[https://github.com/John-Paul-R/Essential-Commands/wiki/List-of-Commands-&-Permissions](https://github.com/John-Paul-R/Essential-Commands/wiki/List-of-Commands-&-Permissions)**
+    
+
+## **更新日志**
+
+-   2025年3月30日 1.0正式最终版：添加了部分配置，可前往 文件【配置项修改】查看。 本版本为正式最终版，除必要维护外，将不再更新。
+    
+-   2024年8月5日 0.3测试版：新增部分mod，修复carpet意外的不在mods文件夹的问题。
+    
+-   2024年7月18日 0.2测试版: 重启整合包项目，将整合包更名为“fabric-geyser互通整合包”。
+    
+-   2023年11月23日 因存在较多问题，已暂时下架该整合包。
+    
+-   2023年9月9日 Release 1.0: 发布整合包。

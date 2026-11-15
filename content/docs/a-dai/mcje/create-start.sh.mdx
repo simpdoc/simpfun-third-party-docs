@@ -1,0 +1,119 @@
+---
+title: "启动脚本的编写"
+author: "阿呆皮革厂"
+license: "CC BY-NC-SA 4.0"
+---
+## 启动脚本的格式
+
+### 文件的解释器声明
+
+在文件的开头，我们应当指明系统所该使用的bash shell解释器，该指示器在/bin/bash路径下，在前面加上可执行文件标识符#!，就完成了解释器声明，即：
+
+`#!/bin/bash`
+
+该内容也被称为释伴(shebang)
+
+### 环境变量的声明
+
+在简幻欢中，已经有预设的jdk，而系统不知道你要用的jdk在什么路径，因而需要声明变量及其路径，预设jdk的声明如下：
+
+```auto
+#!/bin/bash
+
+openjdk8="/usr/bin/jdk/jdk1.8.0_361/bin/java"
+openjdk11="/usr/bin/jdk/jdk-11.0.18/bin/java"
+openjdk17="/usr/bin/jdk/jdk-17.0.6/bin/java"
+openjdk19="/usr/bin/jdk/jdk-19.0.2/bin/java"
+openjdk21="/usr/bin/jdk/jdk-21.0.2/bin/java"
+```
+
+如果你自行导入了新的jdk或jre，也应当声明专门的环境变量，或直接对路径引用，引用必须直接引用到./bin/java。
+
+### 自定义变量
+
+为了使用方便，我们会尽可能用简短的变量来代替冗长的内容，简化代码，提高可读性和可维护性，启动脚本也是如此。
+
+在简幻欢的启动脚本中，有这样的一个变量：
+
+```shell
+maxmem=$((SERVER_MEMORY - 1000))
+```
+
+它的含义是：
+
+maxmem是一个自定义变量，变量继承自SERVER\_MEMORY - 1000 的值。
+
+在书写变量时，要注意**等号两侧没有空格**，括号是**成对出现**的。
+
+### 主命令
+
+主命令就是直接启动服务器的命令，包括java路径、java参数、启动资源路径、其它参数。
+
+这里给出一个主命令的例子：
+
+```auto
+JAVA_PATH -jar -Xms1024M -Xmx${maxmem}M server-release.jar "$@" nogui
+```
+
+JAVA\_PATH 是自定义的java路径变量，-jar是告诉java要运行JAR包文件，-Xms是初始内存，当前设定为1024MB，-Xmx是最大占用内存，当前设定为maxmem变量的值，运行的JAR包文件是server-release.jar，"$@"是指传递给脚本的所有命令行参数（保留原始格式），nogui指以纯命令行形式启动，减少占用。
+
+**部分高版本的Forge和NeoForge则有所不同**，不依赖于JAR包文件启动，而是依靠于一个TXT文件，主命令示例如下：
+
+```auto
+JAVA_PATH -Xms1024M -Xmx${maxmem}M @libraries/net/neoforged/neoforge/20.6.136/unix_args.txt "$@" nogui
+```
+
+**请注意**：以TXT作为启动入口的不需要加-jar参数，实际的JAR包名称需要自行判断
+
+### 启动参数
+
+#### JVM 内存管理优化
+
+```bash
+-XX:NewRatio=3                #调整新老生代GC比例减小老生代GC压力，一般不用
+-XX:SurvivorRatio=4           #调整生命周期，Eden区:Survivor区
+-XX:LargePageSizeInBytes=2m   #使用2MB大页内存（减少内存碎片，需系统支持）
+```
+
+#### 垃圾回收（GC）优化
+
+```bash
+-XX:+UnlockExperimentalVMOptions        # 解锁实验性选项
+-XX:+UseG1GC                            # 使用G1垃圾收集器
+-XX:G1HeapRegionSize=32m                # 每个Region大小32MB（根据堆大小调整，1-32m）
+-XX:MaxGCPauseMillis=50                 # 目标最大GC停顿时间50ms（减少卡顿）
+-XX:G1NewSizePercent=20                 # 新生代最小占比20%
+-XX:G1MaxNewSizePercent=40              # 新生代最大占比40%
+-XX:G1RSetUpdatingPauseTimePercent=5    # 更新RSet的停顿时间占比
+-XX:G1ReservePercent=15                 # 预留15%内存防止OOM
+```
+
+#### 性能与卡顿优化
+
+```bash
+-XX:-UseBiasedLocking                  #禁用偏向锁（减少同步开销）
+-XX:+AggressiveOpts                    # 启用激进优化（Java 8及以下有效）
+-XX:+UseAESIntrinsics                  # 启用AES硬件加速
+-XX:+UseFastAccessorMethods            # 优化原始类型访问
+```
+
+#### 网络与 I/O 优化
+
+```bash
+-Dnet.ipv4.tcp_keepalive=1        # 启用TCP保活机制
+-Dnetty.maxDirectMemory=0         # 禁用Netty直接内存限制（避免网络缓冲区不足）
+-XX:+UseAsyncGCThreads            # 异步执行GC的文件I/O操作（减少停顿），读写优化
+```
+
+#### 模组 / 插件兼容优化
+
+```bash
+-Dfml.ignoreInvalidMinecraftCertificates=true      # 忽略无效的Minecraft证书（模组加载用）
+-Dfml.ignorePatchDiscrepancies=true                # 忽略模组补丁差异（避免启动失败）
+```
+
+#### 无头优化（你也可以用nogui参数）
+
+```bash
+-Djava.awt.headless=true  # 强制无头模式（无GUI，节省资源）
+```

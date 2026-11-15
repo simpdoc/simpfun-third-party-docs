@@ -1,0 +1,12 @@
+{
+  "title": "午夜_Midnight",
+  "pages": [
+    "main",
+    "zeronight",
+    "momoi-dream",
+    "midori-dream",
+    "Other-Docs"
+  ],
+  "description": "午夜的第三方镜像文档",
+  "root": true
+}

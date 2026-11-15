@@ -1,0 +1,1007 @@
+---
+title: "NeoForge 方块与方块实体开发完全指南"
+author: "阿呆皮革厂"
+license: "CC BY-NC-SA 4.0"
+---
+* * *
+
+## 目录
+
+1.  [前置：先学会“读源码学开发”](#1-%E5%89%8D%E7%BD%AE%E5%85%88%E5%AD%A6%E4%BC%9A%E8%AF%BB%E6%BA%90%E7%A0%81%E5%AD%A6%E5%BC%80%E5%8F%91)
+    
+2.  [先建立正确心智模型：BlockState 与 BlockEntity 的边界](#2-%E5%85%88%E5%BB%BA%E7%AB%8B%E6%AD%A3%E7%A1%AE%E5%BF%83%E6%99%BA%E6%A8%A1%E5%9E%8Bblockstate-%E4%B8%8E-blockentity-%E7%9A%84%E8%BE%B9%E7%95%8C)
+    
+3.  [注册系统的本质：为什么一定要 DeferredRegister](#3-%E6%B3%A8%E5%86%8C%E7%B3%BB%E7%BB%9F%E7%9A%84%E6%9C%AC%E8%B4%A8%E4%B8%BA%E4%BB%80%E4%B9%88%E4%B8%80%E5%AE%9A%E8%A6%81-deferredregister)
+    
+4.  [从“放置方块”到“创建 BE”的完整调用链](#4-%E4%BB%8E%E6%94%BE%E7%BD%AE%E6%96%B9%E5%9D%97%E5%88%B0%E5%88%9B%E5%BB%BA-be-%E7%9A%84%E5%AE%8C%E6%95%B4%E8%B0%83%E7%94%A8%E9%93%BE)
+    
+5.  [生命周期与持久化：数据为什么能存档](#5-%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E4%B8%8E%E6%8C%81%E4%B9%85%E5%8C%96%E6%95%B0%E6%8D%AE%E4%B8%BA%E4%BB%80%E4%B9%88%E8%83%BD%E5%AD%98%E6%A1%A3)
+    
+6.  [Tick 机制深挖：为什么 ticker 会不执行](#6-tick-%E6%9C%BA%E5%88%B6%E6%B7%B1%E6%8C%96%E4%B8%BA%E4%BB%80%E4%B9%88-ticker-%E4%BC%9A%E4%B8%8D%E6%89%A7%E8%A1%8C)
+    
+7.  [同步机制深挖：保存、首包同步、运行时同步](#7-%E5%90%8C%E6%AD%A5%E6%9C%BA%E5%88%B6%E6%B7%B1%E6%8C%96%E4%BF%9D%E5%AD%98%E9%A6%96%E5%8C%85%E5%90%8C%E6%AD%A5%E8%BF%90%E8%A1%8C%E6%97%B6%E5%90%8C%E6%AD%A5)
+    
+8.  [交互与移除：use/onRemove/掉落/红石更新](#8-%E4%BA%A4%E4%BA%92%E4%B8%8E%E7%A7%BB%E9%99%A4useonremove%E6%8E%89%E8%90%BD%E7%BA%A2%E7%9F%B3%E6%9B%B4%E6%96%B0)
+    
+9.  [Datagen 工程化：不要手写资源到失控](#9-datagen-%E5%B7%A5%E7%A8%8B%E5%8C%96%E4%B8%8D%E8%A6%81%E6%89%8B%E5%86%99%E8%B5%84%E6%BA%90%E5%88%B0%E5%A4%B1%E6%8E%A7)
+    
+10.  [从 0 到 1：一个可落地的“计数器方块”完整骨架](#10-%E4%BB%8E-0-%E5%88%B0-1%E4%B8%80%E4%B8%AA%E5%8F%AF%E8%90%BD%E5%9C%B0%E7%9A%84%E8%AE%A1%E6%95%B0%E5%99%A8%E6%96%B9%E5%9D%97%E5%AE%8C%E6%95%B4%E9%AA%A8%E6%9E%B6)
+     
+11.  [性能与稳定性方法论](#11-%E6%80%A7%E8%83%BD%E4%B8%8E%E7%A8%B3%E5%AE%9A%E6%80%A7%E6%96%B9%E6%B3%95%E8%AE%BA)
+     
+12.  [排错决策树：按症状反推根因](#12-%E6%8E%92%E9%94%99%E5%86%B3%E7%AD%96%E6%A0%91%E6%8C%89%E7%97%87%E7%8A%B6%E5%8F%8D%E6%8E%A8%E6%A0%B9%E5%9B%A0)
+     
+13.  [学习计划](#13-%E5%AD%A6%E4%B9%A0%E8%AE%A1%E5%88%92)
+     
+14.  [最终方法论总结：方块开发通用方法论](#14-%E6%9C%80%E7%BB%88%E6%96%B9%E6%B3%95%E8%AE%BA%E6%80%BB%E7%BB%93%E6%96%B9%E5%9D%97%E5%BC%80%E5%8F%91%E9%80%9A%E7%94%A8%E6%96%B9%E6%B3%95%E8%AE%BA)
+     
+
+* * *
+
+## 1\. 前置：先学会“读源码学开发”
+
+很多新手的问题不是“不会写代码”，而是“不会定位依据”。
+
+建议将方块开发拆成 4 条源码主线：
+
+-   行为入口主线：`BlockBehaviour` 与 `Block`
+    
+-   方块实体主线：`EntityBlock`、`BaseEntityBlock`、`BlockEntity`
+    
+-   运行时调度主线：`LevelChunk.setBlockState()`、`LevelChunk.updateBlockEntityTicker()`
+    
+-   数据生成主线：`GatherDataEvent`、`BlockStateProvider`
+    
+
+### 1.1 学源码的顺序（非常重要）
+
+1.  先看类注释和方法签名（输入/输出/是否 `@Nullable`）
+    
+2.  再看默认实现（尤其是空实现与默认返回值）
+    
+3.  最后追调用链，确认“谁调用它”
+    
+
+例如：
+
+-   `EntityBlock.getTicker()` 默认返回 `null`
+    
+-   这意味着：若未覆写则不会 tick
+    
+
+这就是“通过默认实现反推缺失步骤”的方法论。
+
+* * *
+
+## 2\. 先建立正确模型：`BlockState` 与 `BlockEntity` 的边界
+
+### 2.1 必须区分的三层数据
+
+1.  **类型层**：`Block`（定义这类方块能做什么）
+    
+2.  **状态层**：`BlockState`（有限离散状态：朝向/开关/含水）
+    
+3.  **实例层**：`BlockEntity`（每个坐标独立的复杂可变数据）
+    
+
+### 2.2 什么放 `BlockState`
+
+适合放 `BlockState` 的特征：
+
+-   状态空间小（布尔、枚举）
+    
+-   直接影响模型/碰撞/红石判定
+    
+-   高频读、低复杂度
+    
+
+### 2.3 什么放 `BlockEntity`
+
+只要满足一条就应考虑上 `BlockEntity`：
+
+-   需要保存任意数值（能量、进度、温度）
+    
+-   需要存结构化数据（物品列表、配置）
+    
+-   需要持续逻辑（tick）
+    
+-   需要运行中网络同步
+    
+
+`BlockEntity` 的基础定义见 `BlockEntity`。
+
+### 2.4 新手最常见反模式
+
+-   把“无限变化数值”塞进 `BlockState`
+    
+-   在客户端做权威逻辑
+    
+-   只写保存不写同步
+    
+-   改数据不调 `BlockEntity.setChanged()`
+    
+
+* * *
+
+## 3\. 注册系统的本质：为什么一定要 `DeferredRegister`
+
+核心入口在 `DeferredRegister.register(IEventBus)`。
+
+它本质做两件事：
+
+-   监听注册事件并在正确时机写入注册表：`DeferredRegister.addEntries()`
+    
+-   防止错误时机注册（晚于注册事件）
+    
+
+### 3.1 方块三件套注册
+
+通常至少有三类注册器：
+
+-   方块：`DeferredRegister.createBlocks(modid)`
+    
+-   方块物品：`DeferredRegister.createItems(modid)`
+    
+-   方块实体类型：`DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, modid)`
+    
+
+常见便捷 API：
+
+-   `DeferredRegister.Blocks.registerBlock()`
+    
+-   `DeferredRegister.Items.registerSimpleBlockItem()`
+    
+
+### 3.2 `BlockEntityType` 的“合法方块集合”不是摆设
+
+-   见 `BlockEntityType.Builder.of()`
+    
+-   见 `BlockEntityType.isValid()`
+    
+
+它决定某个 `BlockState` 是否允许绑定该 BE。 这会在运行时 tick 与设置 BE 时被反复校验，不是“仅注册期校验”。
+
+* * *
+
+## 4\. 从“放置方块”到“创建 BE”的完整调用链
+
+这是本文最关键的机制链。
+
+### 4.1 方块状态写入后，区块侧尝试创建 BE
+
+看 `LevelChunk.setBlockState()` 中关键分支：
+
+-   若新状态 `state.hasBlockEntity()` 成立（见同方法中 `LevelChunk.setBlockState()`）
+    
+-   通过 `EntityBlock.newBlockEntity()` 创建实例
+    
+-   再调用 `LevelChunk.addAndRegisterBlockEntity()`
+    
+
+### 4.2 BE 放入区块前会做状态合法性校验
+
+见 `LevelChunk.setBlockEntity()`：
+
+-   校验方块是否允许 BE
+    
+-   校验 `blockEntity.getType().isValid(blockstate)`（见 `LevelChunk.setBlockEntity()`）
+    
+-   不合法会 warn 并拒绝挂载
+    
+
+这就是“看似创建成功但实际不工作”的根因之一。
+
+### 4.3 `onRemove` 的默认行为
+
+默认实现在 `BlockBehaviour.onRemove()`：
+
+-   当方块类型变化且有 BE 时，调用 `level.removeBlockEntity(pos)`
+    
+
+所以容器类方块必须正确处理替换场景。
+
+* * *
+
+## 5\. 生命周期与持久化：数据为什么能存档
+
+### 5.1 通常必须覆写的两个方法
+
+-   读取：`BlockEntity.loadAdditional()`
+    
+-   写入：`BlockEntity.saveAdditional()`
+    
+
+### 5.2 `setChanged` 到“区块脏标记”的链路
+
+调用 `BlockEntity.setChanged()` 后：
+
+-   进入静态辅助 `BlockEntity.setChanged(Level, BlockPos, BlockState)`
+    
+-   调 `Level.blockEntityChanged()`
+    
+-   把区块标记为未保存（`unsaved = true`）见 `ChunkAccess.unsaved`
+    
+
+结论：
+
+> 不调 `setChanged`，BE 数据可能“逻辑上变了，磁盘上没变”。
+
+### 5.3 元数据保存与自定义保存
+
+-   完整元数据保存：`BlockEntity.saveWithFullMetadata()`
+    
+-   仅自定义数据：`BlockEntity.saveCustomOnly()`
+    
+
+对理解“掉落时写 NBT / 世界存档写 NBT”差异非常有用。
+
+* * *
+
+## 6\. Tick 机制深挖：为什么 ticker 会不执行
+
+### 6.1 三段式前置条件
+
+要让 BE tick，至少满足：
+
+1.  方块实现 `EntityBlock.getTicker()`
+    
+2.  返回值非空（类型匹配）
+    
+3.  区块侧完成 ticker 绑定
+    
+
+### 6.2 推荐写法：`createTickerHelper`
+
+类型安全 helper 在 `BaseEntityBlock.createTickerHelper()`。
+
+vanilla 样板见 `SpawnerBlock.getTicker()`。
+
+### 6.3 区块如何绑定 ticker
+
+绑定入口：`LevelChunk.updateBlockEntityTicker()`
+
+-   从 `blockstate.getTicker(...)` 取到 ticker
+    
+-   包装成 `LevelChunk.BoundTickingBlockEntity.tick()`
+    
+-   加入 level 的 ticker 列表
+    
+
+### 6.4 执行时再次做合法性校验
+
+在 `LevelChunk.BoundTickingBlockEntity.tick()`：
+
+-   每 tick 检查 `this.blockEntity.getType().isValid(blockstate)`
+    
+-   不合法会记录告警并跳过
+    
+
+这解释了“注册没报错，但 tick 不跑”的一类隐蔽问题。
+
+### 6.5 异常 BE 的处理策略
+
+同方法中异常处理分支（见 `LevelChunk.BoundTickingBlockEntity.tick()`）：
+
+-   可配置为移除报错 BE（服务器配置）
+    
+-   否则抛异常中断
+    
+
+工程结论：
+
+-   机器逻辑要尽可能防御空值/非法状态
+    
+-   tick 中避免高风险反射/非幂等 I/O
+    
+
+* * *
+
+## 7\. 同步机制深挖：保存、首包同步、运行时同步
+
+同步机制必须分 3 类讨论，避免混为一谈。
+
+### 7.1 类别 A：磁盘持久化
+
+-   `saveAdditional/loadAdditional`
+    
+-   目标是“重进世界数据还在”
+    
+
+### 7.2 类别 B：区块/首次可见同步
+
+-   包体：`ClientboundBlockEntityDataPacket`
+    
+-   默认构造：`ClientboundBlockEntityDataPacket.create(BlockEntity)`
+    
+-   内容来自 `BlockEntity.getUpdateTag()`
+    
+
+客户端收包后，在区块替换路径会调用 `LevelChunk.replaceWithPacketData()` 内的 `handleUpdateTag`（见 `LevelChunk.replaceWithPacketData()`）。
+
+### 7.3 类别 C：运行时主动同步
+
+服务端数据改动后，常见组合：
+
+1.  `setChanged()`
+    
+2.  `level.sendBlockUpdated(pos, oldState, newState, flags)`
+    
+3.  覆写 `BlockEntity.getUpdatePacket()` 返回 `ClientboundBlockEntityDataPacket.create()`
+    
+
+vanilla 参考：`SpawnerBlockEntity`（可对照其 `getUpdatePacket` 实现）。
+
+### 7.4 高发误区
+
+-   只做 A，不做 B/C：重进后正确，在线时 UI 不刷新
+    
+-   只做 C，不做 A：在线时看着没问题，重进丢失
+    
+
+* * *
+
+## 8\. 交互与移除：`use`/`onRemove`/掉落/红石更新
+
+### 8.1 交互入口
+
+-   空手交互入口：`BlockBehaviour.useWithoutItem()`
+    
+-   持物交互入口：`BlockBehaviour.useItemOn()`
+    
+
+原则：
+
+-   权威数据写操作在服务端做
+    
+-   客户端做交互反馈即可
+    
+
+### 8.2 为什么 `onRemove` 是高危点
+
+默认 `BlockBehaviour.onRemove()` 会移除 BE。 若方块实体含库存/能量缓存，不在替换前处理就会丢失。
+
+### 8.3 掉落体系
+
+方块掉落相关静态入口在 `Block.dropResources()`。
+
+建议：
+
+-   业务掉落策略尽量在 loot table 管理
+    
+-   `onRemove` 只处理运行时善后（例如容器清空/能力失效/邻居通知）
+    
+
+### 8.4 红石与邻居更新
+
+`BlockEntity.setChanged(Level, BlockPos, BlockState)` 内会触发 `updateNeighbourForOutputSignal`。 说明 BE 脏标记不仅影响保存，也可能影响比较器输出链。
+
+* * *
+
+## 9\. Datagen 工程化：不要手写资源到失控
+
+### 9.1 入口事件
+
+`GatherDataEvent` 提供：
+
+-   `GatherDataEvent.includeClient()`
+    
+-   `GatherDataEvent.includeServer()`
+    
+-   `GatherDataEvent.getGenerator()`
+    
+
+### 9.2 方块状态与模型
+
+`BlockStateProvider` 是核心：
+
+-   `BlockStateProvider.simpleBlock()`
+    
+-   `BlockStateProvider.simpleBlockItem()`
+    
+-   `BlockStateProvider.simpleBlockWithItem()`
+    
+-   复杂状态用 `BlockStateProvider.getVariantBuilder()` 或 `BlockStateProvider.getMultipartBuilder()`
+    
+
+### 9.3 本地化
+
+`LanguageProvider` 常用 API：
+
+-   `LanguageProvider.addBlock()`
+    
+-   `LanguageProvider.addItem()`
+    
+-   `LanguageProvider.add(String, String)`
+    
+
+### 9.4 掉落表
+
+`BlockLootSubProvider` 常用构建器：
+
+-   `BlockLootSubProvider.createSingleItemTable()`
+    
+-   `BlockLootSubProvider.createSilkTouchDispatchTable()`
+    
+-   `BlockLootSubProvider.createSlabItemTable()`
+    
+
+### 9.5 Datagen 的方法论价值
+
+Datagen 不是“省事脚本”，而是**一致性系统**：
+
+-   防漏文件
+    
+-   降命名错误率
+    
+-   批量重构成本低
+    
+
+### 9.6 方块“每个面的贴图”到底怎么设置（关键补漏）
+
+本节补充每面贴图配置。核心先记一句：
+
+> “每面贴图”本质是 **模型纹理槽位绑定** 问题，而不是 BE 问题。
+
+#### 9.6.1 六面槽位的标准键
+
+在 `ModelProvider.cube()` 里已经写死了标准键：
+
+-   `down`
+    
+-   `up`
+    
+-   `north`
+    
+-   `south`
+    
+-   `east`
+    
+-   `west`
+    
+
+也就是说，若需“六个面六张图”，最底层方法就是给这 6 个键分别绑定纹理。
+
+#### 9.6.2 手写 JSON 方案（先理解原理）
+
+示例（手写模型）：
+
+```json
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "down": "examplemod:block/machine_bottom",
+    "up": "examplemod:block/machine_top",
+    "north": "examplemod:block/machine_front",
+    "south": "examplemod:block/machine_back",
+    "east": "examplemod:block/machine_right",
+    "west": "examplemod:block/machine_left"
+  }
+}
+```
+
+方法论重点：
+
+-   `north/south/east/west` 是**世界方向**，不是主观的“前后左右”
+    
+-   如果方块有朝向属性，真正“前脸”会通过 blockstate 旋转映射，不是直接改模型键名
+    
+
+#### 9.6.3 Datagen 方案（推荐，能防漏）
+
+可直接用 `ModelProvider.cube()` 生成六面模型，再用 `BlockStateProvider.simpleBlockWithItem()` 一次性绑定方块与物品模型：
+
+```java
+@Override
+protected void registerStatesAndModels() {
+    ModelFile model = models().cube(
+            "counter_machine",
+            modLoc("block/machine_bottom"),
+            modLoc("block/machine_top"),
+            modLoc("block/machine_front"),
+            modLoc("block/machine_back"),
+            modLoc("block/machine_right"),
+            modLoc("block/machine_left")
+    );
+
+    simpleBlockWithItem(ModBlocks.COUNTER_BLOCK.get(), model);
+}
+```
+
+还可以用模板化方法减少贴图数量：
+
+-   全面同图：`ModelProvider.cubeAll()`
+    
+-   侧面一致 + 顶底不同：`ModelProvider.cubeBottomTop()`
+    
+
+#### 9.6.4 “正面会旋转”的方块怎么做
+
+如果方块有 `HORIZONTAL_FACING`，不要只 `simpleBlock`，应使用 `BlockStateProvider.horizontalBlock()`。
+
+它内部会根据朝向自动计算 `ConfiguredModel.rotationY()`（由 `BlockStateProvider.horizontalBlock(...)` 赋值），避免手写旋转表出错。
+
+若是六向（含上下）方块，用 `BlockStateProvider.directionalBlock()`。
+
+#### 9.6.5 每面贴图排错清单
+
+1.  模型 parent 是否为 `minecraft:block/cube`（或对应模板）
+    
+2.  六个纹理键是否拼写正确（`down/up/north/south/east/west`）
+    
+3.  blockstate 是否做了正确旋转（`horizontalBlock/directionalBlock`）
+    
+4.  方块物品模型是否也指向正确模型（见 `BlockStateProvider.simpleBlockItem()`）
+    
+5.  修改资源后是否重新生成并刷新资源
+    
+
+### 9.7 其他高频遗漏项（一次补齐）
+
+#### 9.7.1 只生成 block model，漏了 item model
+
+-   世界内显示正常，但手持/物品栏紫黑或不一致
+    
+-   用 `BlockStateProvider.simpleBlockWithItem()` 可避免漏配
+    
+
+#### 9.7.2 有朝向属性却仍用 `simpleBlock`
+
+-   结果：方块永远朝一个方向，前脸错位
+    
+-   有朝向时至少改为 `BlockStateProvider.horizontalBlock()` 或 `BlockStateProvider.directionalBlock()`
+    
+
+#### 9.7.3 忘记覆盖 BE 方块渲染形态
+
+`BaseEntityBlock.getRenderShape()` 默认返回 `RenderShape.INVISIBLE`。 不覆盖时会出现“方块逻辑存在、模型不显示”。
+
+#### 9.7.4 忘记处理替换移除善后
+
+`BlockBehaviour.onRemove()` 默认会在方块替换时移除 BE。 若有库存/缓存/能力，不做善后很容易丢数据或残留状态。
+
+#### 9.7.5 掉落、语言、资源三件套不闭环
+
+至少要保证：
+
+-   loot：`BlockLootSubProvider`
+    
+-   语言：`LanguageProvider.addBlock()`
+    
+-   blockstate+model：`BlockStateProvider`
+    
+
+否则就会出现“能放不能掉、能用没名字、世界显示正常但物品不正常”的割裂现象。
+
+* * *
+
+## 10\. 从 0 到 1：一个可落地的“计数器方块”完整骨架
+
+> 这部分是教学骨架，可按实际包名改写。 重点不是抄代码，而是观察“每段代码在生命周期里负责什么”。
+
+### 10.1 注册层
+
+```java
+public final class ModRegistries {
+    public static final String MODID = "examplemod";
+
+    public static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(MODID);
+    public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(MODID);
+    public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITY_TYPES =
+            DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, MODID);
+
+    public static final DeferredBlock<CounterBlock> COUNTER_BLOCK = BLOCKS.registerBlock(
+            "counter_block",
+            CounterBlock::new,
+            BlockBehaviour.Properties.of().strength(2.0F).requiresCorrectToolForDrops()
+    );
+
+    public static final DeferredItem<BlockItem> COUNTER_BLOCK_ITEM =
+            ITEMS.registerSimpleBlockItem(COUNTER_BLOCK);
+
+    public static final Supplier<BlockEntityType<CounterBlockEntity>> COUNTER_BE =
+            BLOCK_ENTITY_TYPES.register("counter_block", () ->
+                    BlockEntityType.Builder.of(CounterBlockEntity::new, COUNTER_BLOCK.get()).build(null)
+            );
+
+    public static void register(IEventBus modBus) {
+        BLOCKS.register(modBus);
+        ITEMS.register(modBus);
+        BLOCK_ENTITY_TYPES.register(modBus);
+    }
+}
+```
+
+设计意图：
+
+-   `COUNTER_BE` 的 `validBlocks` 明确绑定 `COUNTER_BLOCK`
+    
+-   保证后续 `BlockEntityType.isValid()` 校验通过
+    
+
+### 10.2 方块层
+
+```java
+public class CounterBlock extends BaseEntityBlock {
+    public static final MapCodec<CounterBlock> CODEC = simpleCodec(CounterBlock::new);
+
+    public CounterBlock(BlockBehaviour.Properties properties) {
+        super(properties);
+    }
+
+    @Override
+    protected MapCodec<? extends BaseEntityBlock> codec() {
+        return CODEC;
+    }
+
+    @Nullable
+    @Override
+    public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
+        return new CounterBlockEntity(pos, state);
+    }
+
+    @Nullable
+    @Override
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(
+            Level level, BlockState state, BlockEntityType<T> type
+    ) {
+        return createTickerHelper(type, ModRegistries.COUNTER_BE.get(),
+                level.isClientSide ? CounterBlockEntity::clientTick : CounterBlockEntity::serverTick);
+    }
+
+    @Override
+    protected InteractionResult useWithoutItem(
+            BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit
+    ) {
+        if (!level.isClientSide) {
+            BlockEntity be = level.getBlockEntity(pos);
+            if (be instanceof CounterBlockEntity counter) {
+                counter.increase();
+            }
+        }
+        return InteractionResult.sidedSuccess(level.isClientSide);
+    }
+
+    @Override
+    protected RenderShape getRenderShape(BlockState state) {
+        return RenderShape.MODEL;
+    }
+
+    @Override
+    protected void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
+        if (!state.is(newState.getBlock())) {
+            // 如果有库存/缓存，这里先做善后处理
+            super.onRemove(state, level, pos, newState, movedByPiston);
+        }
+    }
+}
+```
+
+为什么这样写：
+
+-   `getRenderShape` 必须覆盖（`BaseEntityBlock.getRenderShape()` 默认 `INVISIBLE`）
+    
+-   `getTicker` 用 `BaseEntityBlock.createTickerHelper()` 保证类型安全
+    
+
+### 10.3 方块实体层
+
+```java
+public class CounterBlockEntity extends BlockEntity {
+    private int count;
+
+    public CounterBlockEntity(BlockPos pos, BlockState state) {
+        super(ModRegistries.COUNTER_BE.get(), pos, state);
+    }
+
+    public void increase() {
+        this.count++;
+        this.setChanged();
+
+        if (this.level != null && !this.level.isClientSide) {
+            BlockState state = this.getBlockState();
+            this.level.sendBlockUpdated(this.worldPosition, state, state, Block.UPDATE_ALL);
+        }
+    }
+
+    public int getCount() {
+        return this.count;
+    }
+
+    @Override
+    protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
+        super.loadAdditional(tag, registries);
+        this.count = tag.getInt("Count");
+    }
+
+    @Override
+    protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
+        super.saveAdditional(tag, registries);
+        tag.putInt("Count", this.count);
+    }
+
+    @Override
+    public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
+        CompoundTag tag = new CompoundTag();
+        tag.putInt("Count", this.count);
+        return tag;
+    }
+
+    @Override
+    public ClientboundBlockEntityDataPacket getUpdatePacket() {
+        return ClientboundBlockEntityDataPacket.create(this);
+    }
+
+    public static void serverTick(Level level, BlockPos pos, BlockState state, CounterBlockEntity be) {
+        if (level.getGameTime() % 20L == 0L) {
+            be.count++;
+            be.setChanged();
+            level.sendBlockUpdated(pos, state, state, Block.UPDATE_ALL);
+        }
+    }
+
+    public static void clientTick(Level level, BlockPos pos, BlockState state, CounterBlockEntity be) {
+        // 纯客户端展示逻辑（粒子/动画）
+    }
+}
+```
+
+核心要点：
+
+-   持久化：`BlockEntity.loadAdditional()` + `BlockEntity.saveAdditional()`
+    
+-   脏标记：`BlockEntity.setChanged()`
+    
+-   网络包：`ClientboundBlockEntityDataPacket.create()`
+    
+
+### 10.4 旗标补充
+
+更新旗标在 `Block` 中定义：
+
+-   `Block.UPDATE_NEIGHBORS`
+    
+-   `Block.UPDATE_CLIENTS`
+    
+-   `Block.UPDATE_ALL`
+    
+
+通常“服务端改 BE 数据并让客户端刷新”优先考虑 `UPDATE_ALL`。
+
+* * *
+
+## 11\. 性能与稳定性方法论
+
+### 11.1 Tick 预算意识
+
+BE tick 是最容易把 TPS 拉低的地方。原则：
+
+-   能事件驱动就别每 tick 轮询
+    
+-   必须轮询就降低频率（如每 5/10/20 tick）
+    
+-   跨区块搜索要限半径、限次数
+    
+
+### 11.2 “服务端权威，客户端展示”铁律
+
+-   服务端：库存、配方、能量、状态推进
+    
+-   客户端：插值动画、特效、UI 表现
+    
+
+如果双端都改核心状态，最容易出现幽灵状态。
+
+### 11.3 防御式编程
+
+在 `tick` 和交互函数中：
+
+-   先校验 `level`、方块状态、`isRemoved`
+    
+-   对外部能力访问做空判
+    
+-   异常不要吞，至少日志定位
+    
+
+运行时封装层会在异常路径处理崩溃（见 `LevelChunk.BoundTickingBlockEntity.tick()`），但不应依赖其“兜底”。
+
+* * *
+
+## 12\. 排错决策树：按症状反推根因
+
+### 症状 A：放下方块后没有 BE
+
+检查顺序：
+
+1.  方块是否实现/继承 `EntityBlock`
+    
+2.  `EntityBlock.newBlockEntity()` 是否返回非空
+    
+3.  `BlockEntityType` 的 `validBlocks` 是否包含该方块（`BlockEntityType.Builder.of()`）
+    
+4.  日志是否出现 `state does not allow it`（对应 `LevelChunk.setBlockEntity()`）
+    
+
+### 症状 B：数据重进后丢失
+
+检查顺序：
+
+1.  是否覆写 `BlockEntity.saveAdditional()`
+    
+2.  是否覆写 `BlockEntity.loadAdditional()`
+    
+3.  写入/读取 key 是否一致
+    
+4.  数据改动后是否调用 `BlockEntity.setChanged()`
+    
+
+### 症状 C：客户端不刷新
+
+检查顺序：
+
+1.  是否实现 `BlockEntity.getUpdatePacket()`
+    
+2.  是否实现 `BlockEntity.getUpdateTag()`
+    
+3.  服务端改值后是否 `sendBlockUpdated`
+    
+4.  是否把权威改值错误放在了客户端
+    
+
+### 症状 D：ticker 不执行
+
+检查顺序：
+
+1.  `EntityBlock.getTicker()` 是否返回非空
+    
+2.  是否使用 `BaseEntityBlock.createTickerHelper()`
+    
+3.  BE type 与当前 state 是否匹配（`BlockEntityType.isValid()`）
+    
+4.  日志是否有 invalid for ticking（见 `LevelChunk.BoundTickingBlockEntity.tick()`）
+    
+
+* * *
+
+## 13\. 学习计划
+
+### 1：纯方块
+
+-   完成方块注册、方块物品注册
+    
+-   学会最基本资源链
+    
+
+### 2：引入 BE
+
+-   让方块继承 `BaseEntityBlock`
+    
+-   实现 `newBlockEntity`
+    
+
+### 3：存读档闭环
+
+-   加 `int` 字段
+    
+-   写 `loadAdditional/saveAdditional`
+    
+-   改值后 `setChanged`
+    
+
+### 4：tick 闭环
+
+-   实现 `getTicker`
+    
+-   写 `serverTick`
+    
+-   验证是否持续推进
+    
+
+### 5：同步闭环
+
+-   实现 `getUpdatePacket/getUpdateTag`
+    
+-   服务端改值后 `sendBlockUpdated`
+    
+
+### 6：datagen 闭环
+
+-   `BlockStateProvider` + `LanguageProvider` + `BlockLootSubProvider`
+    
+
+### 7：重写一遍
+
+-   不看旧代码，从空模板重写一遍
+    
+-   这一步会把“会抄”变成“会设计”
+    
+
+* * *
+
+## 14\. 最终方法论总结：方块开发通用方法论
+
+把任意一个新方块需求，先写成这 8 个问题：
+
+1.  这块数据是 `BlockState` 还是 `BlockEntity`？
+    
+2.  是否需要 `ticker`？在服务端还是客户端？
+    
+3.  数据如何持久化（`save/load`）？
+    
+4.  数据何时同步（首包 / 运行时）？
+    
+5.  交互入口在 `useWithoutItem` 还是 `useItemOn`？
+    
+6.  替换移除时 `onRemove` 如何善后？
+    
+7.  掉落由 loot table 还是代码处理？
+    
+8.  Datagen 最小闭环是否齐全？
+    
+
+实践中会发现：
+
+-   复杂机器方块 ≈ 基础 BE 方块 + 更多状态机
+    
+-   多方块结构 ≈ 单块骨架 + 结构协调层
+    
+-   代码复杂度上升，但方法论不变
+    
+
+这就是“从会写一个方块”到“能持续做模组工程”的分水岭。
+
+* * *
+
+## 附录 A：常用源码锚点速查
+
+-   `DeferredRegister.register(IEventBus)`
+    
+-   `BlockBehaviour.onRemove()`
+    
+-   `EntityBlock.newBlockEntity()`
+    
+-   `EntityBlock.getTicker()`
+    
+-   `BaseEntityBlock.createTickerHelper()`
+    
+-   `BlockEntity.setChanged()`
+    
+-   `Level.blockEntityChanged()`
+    
+-   `LevelChunk.setBlockState()`
+    
+-   `LevelChunk.updateBlockEntityTicker()`
+    
+-   `LevelChunk.BoundTickingBlockEntity.tick()`
+    
+-   `ClientboundBlockEntityDataPacket.create()`
+    
+-   `GatherDataEvent.includeClient()`
+    
+-   `GatherDataEvent.includeServer()`
+    
+-   `BlockStateProvider.simpleBlockWithItem()`
+    
+-   `LanguageProvider.addBlock()`
+    
+-   `BlockLootSubProvider.createSingleItemTable()`
+    
+
+* * *
+
+## 附录 B：提交前最小检查清单
+
+-    已注册 `Block` / `BlockItem` / `BlockEntityType`
+    
+-    `newBlockEntity` 可返回正确实例
+    
+-    `getTicker` 已做类型安全匹配
+    
+-    `saveAdditional/loadAdditional` key 一致
+    
+-    数据变更后一定调用 `setChanged`
+    
+-    运行时同步链完整（`getUpdatePacket` + `sendBlockUpdated`）
+    
+-    `onRemove` 替换场景已善后
+    
+-    datagen 最小闭环可产物（blockstate/model/lang/loot）

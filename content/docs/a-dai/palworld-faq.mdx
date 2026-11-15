@@ -1,0 +1,95 @@
+---
+title: "第三方幻兽帕鲁镜像-常见问题"
+author: "阿呆皮革厂"
+license: "CC BY-NC-SA 4.0"
+---
+1.为什么无法直接启动服务器？我该怎么做？
+
+由于RCON需要相应的端口，因此您应当在此处进行服务器连接的端口配置：
+
+![](/assets/docs/a-dai/image-ryup.webp)
+
+并在第8条中的快捷配置中填入RCON端口
+
+2.什么是启动时显示的绝对路径和相对路径？
+
+此处先需要区分绝对路径和相对路径
+
+Linux中由于没有可见的盘符，绝对路径就是您所看到的完整文件路径。例如：
+
+`/home/container/start.sh`
+
+```bash
+/home/container/start.sh
+```
+
+相对路径指的是相对某一参照物的路径，在该镜像中为相对于启动脚本start.sh的路径，例如同级目录下的7zip文件夹：
+
+```bash
+/home/container/7zip
+```
+
+```bash
+./7zip
+```
+
+3.我应当如何更新第三方幻兽帕鲁镜像版本？
+
+1)等待镜像作者更新，容易存在存档丢失问题或者忘记下载备份文件的问题，因此推荐您手动更新服务端版本。
+
+2)手动更新。您可参考《简幻欢幻兽帕鲁服务器手动更新教程》或者第三方平台的更新教程进行更新。
+
+请借助解压功能和SFTP软件进行导入。导入后放入根目录下解压
+
+4.是否能借助该镜像安装其他steam服务端？
+
+可以。在启动脚本中有详细的注释帮助您修改相关设置。游戏服务端id请移步：[https://steamdb.info/](https://steamdb.info/)查询。
+
+对幻兽帕鲁而言，正常开启的终端输出如下：
+
+![](/assets/docs/a-dai/image-mSvn.webp)
+
+5.旧版镜像需要自行导入Steamcmd，我该去哪里下载？
+
+文档作者已经为您提供了稳定版下载链接：
+
+[https://xianaldai.lanzoub.com/iAdlr30d3bab](https://xianaldai.lanzoub.com/iAdlr30d3bab)  
+密码:gtkt
+
+6.镜像中的7zzs有其他用法吗？
+
+```bash
+chmod 777 ./7zzs         #处理权限问题
+7zzs a xxx.7z a b c       #将a b c文件/文件夹压缩为xxx.7z，也可以是xxx.zip
+7zzs e xxx.7z 解压绝对路径  #将xxx.7z解压至指定路径，也可以是xxx.zip
+```
+
+7z命令行介绍链接:[https://www.cnblogs.com/pscc/p/11813617.html](https://www.cnblogs.com/pscc/p/11813617.html)
+
+快捷下载链接：[https://xianaldai.lanzoub.com/ik9d731vc0ve](https://xianaldai.lanzoub.com/ik9d731vc0ve) (您应当去除后缀，linux可执行文件无需后缀)
+
+7.关机后我的帕鲁存档怎么回档了？怎么解决呢？
+
+幻兽帕鲁服务端不支持在终端直接关机。您应当借助RCON工具来执行服务端命令或关机等操作。此处推荐[https://github.com/zkhssb/NectarRCON](https://github.com/zkhssb/NectarRCON)该项目软件，开源软件相对应的风险更小，不容易出现安全风险。
+
+此处仅列出两个必要的指令：
+
+DoExit 关机，会自动保存数据。
+
+Save 保存服务端数据但不关机。
+
+为防止回档，您应当通过DoExit来关机。RCON执行成功的截图如下：
+
+![](/assets/docs/a-dai/image-MbtT.webp)
+
+8.听说新版本有幻兽帕鲁配置项快捷配置了，它在哪？
+
+如图：
+
+![](/assets/docs/a-dai/image-jGib.webp)
+
+如果你觉得以上内容有帮助，可以帮我推广一下我的推荐码嘛(♡⌂♡)
+
+[https://simpfun.cn/auth?type=register&code=289716307](https://simpfun.cn/auth?type=register&code=289716307)
+
+推荐码：289716307

@@ -1,0 +1,74 @@
+---
+title: "Dominion 插件帮助列表"
+author: "午夜_Midnight"
+license: "来源许可待核实"
+attributions:
+  - name: "Dominion 插件帮助原文（源地址待核实）"
+    license: "待核实"
+---
+-   `<>` 尖括号内为必须内容
+    
+-   \[\] 方括号内为可选内容
+    
+-   `/dominion` 可简写为 `/dom`
+    
+
+[简单的插件使用教程点此](/docs/Midnight/midori-dream/dom-help)
+
+| 命令 | 描述 |
+| --- | --- |
+| `/dominion group_add_member <领地名称> <群组名称> <成员名称>` | 向群组添加成员 |
+| `/dominion member_set_pri <领地名称> <成员名称> <权限标志名称> <true\|false> [页码]` | 设置成员在领地中的权限标志 |
+| `/dominion template_create <模板名称>` | 创建新权限模板 |
+| `/dominion switch_ui [TUI\|CUI]` | 切换领地命令的界面类型 |
+| `/dominion member_remove <领地名称> <成员名称> [页码]` | 从领地移除成员 |
+| `/dominion title_use <头衔ID> [页码]` | 使用群组头衔或禁用当前头衔 |
+| `/dominion create <名称>` | 使用选定点创建新领地 |
+| `/dominion guest_flags <领地名称> [页码]` | 管理领地的访客权限标志 |
+| `/dominion export [mca\|db]` | 导出数据（MCA列表或数据库） |
+| `/dominion give <领地名称> <玩家名称> [强制]` | 将领地授予玩家 |
+| `/dominion group_delete <领地名称> <群组名称> [页码]` | 删除领地的群组 |
+| `/dominion contract <尺寸> [north\|east\|south\|west\|up\|down]` | 基于玩家当前位置快速收缩领地范围 |
+| `/dominion template_set_flag <模板名称> <权限标志名称> <true\|false> [页码]` | 设置模板中的权限标志 |
+| `/dominion group_remove_member <领地名称> <群组名称> <成员名称> [页码]` | 从群组移除成员 |
+| `/dominion list [页码]` | 列出您可管理的所有领地 |
+| `/dominion update_language [确认]` | 根据插件内部语言文件重新生成语言文件 |
+| `/dominion expand <尺寸> [north\|east\|south\|west\|up\|down]` | 基于玩家当前位置快速扩展领地范围 |
+| `/dominion group_flags <领地名称> <群组名称> [页码]` | 管理群组的权限标志 |
+| `/dominion group_list <领地名称> [页码]` | 列出领地的群组 |
+| `/dominion migrate_all` | 将所有住所迁移至领地 |
+| `/dominion list_all [页码]` | 列出本服务器所有领地 |
+| `/dominion member_flags <领地名称> <玩家名称> [页码]` | 管理成员的权限标志 |
+| `/dominion auto_create <名称>` | 在当前位置自动创建领地 |
+| `/dominion migrate <住所名称> [页码]` | 将特定住所迁移至领地 |
+| `/dominion import <数据库> [确认]` | 导入数据库数据 |
+| `/dominion set_env <领地名称> <环境标志名称> <true\|false> [页码]` | 设置领地的环境标志 |
+| `/dominion delete <领地名称> [force]` | 删除领地。使用'force'参数确认删除 |
+| `/dominion group_rename <领地名称> <群组名称> <新群组名称>` | 重命名领地中的群组 |
+| `/dominion copy_group <源领地名称> <目标领地名称>` | 将群组从一个领地复制到另一个领地 |
+| `/dominion migrate_list [页码]` | 列出所有可迁移至领地的住所 |
+| `/dominion reload [配置\|缓存\|全部]` | 重新加载缓存、配置或两者 |
+| `/dominion member_list <领地名称> [页码]` | 列出领地的成员 |
+| `/dominion member_apply_template <领地名称> <成员名称> <模板名称>` | 将权限模板应用到成员 |
+| `/dominion create_sub <名称> <父领地名称>` | 在现有领地内创建子领地 |
+| `/dominion set_guest <领地名称> <访客权限标志> <true\|false> [页码]` | 设置领地的访客权限标志 |
+| `/dominion set_map_color <领地名称> <颜色>` | 设置领地的地图颜色 |
+| `/dominion group_set_flag <领地名称> <群组名称> <权限标志名称> <true\|false> [页码]` | 设置群组的权限标志 |
+| `/dominion member_add <领地名称> <玩家名称>` | 将玩家添加为领地成员 |
+| `/dominion copy_guest <源领地名称> <目标领地名称>` | 将一个领地的访客权限标志复制到另一个领地 |
+| `/dominion auto_create_sub <名称> <父领地名称>` | 在现有领地内自动创建子领地 |
+| `/dominion menu [页码]` | 打开领地主菜单 |
+| `/dominion title_list [页码]` | 列出头衔 |
+| `/dominion manage <领地名称> [页码]` | 打开领地的管理菜单 |
+| `/dominion set_msg <领地名称> <进入\|离开> <消息>` | 设置领地的进入或离开消息 |
+| `/dominion template_rename <模板名称> <新名称> [页码]` | 重命名现有权限模板 |
+| `/dominion help [页码]` | 显示命令帮助信息 |
+| `/dominion rename <领地名称> <新名称>` | 重命名领地 |
+| `/dominion group_create <领地名称> <群组名称>` | 在领地中创建新群组 |
+| `/dominion resize <领地名称> <扩展\|收缩> <尺寸> [north\|east\|south\|west\|up\|down]` | 按指定方向和尺寸调整领地范围 |
+| `/dominion env_flags <领地名称> [页码]` | 管理领地的环境标志 |
+| `/dominion set_tp <领地名称>` | 设置领地的传送点位置 |
+| `/dominion tp <领地名称>` | 传送至指定领地 |
+| `/dominion template_delete <模板名称> [页码]` | 删除现有权限模板 |
+| `/dominion copy_member <源领地名称> <目标领地名称>` | 将成员从一个领地复制到另一个领地 |
+| `/dominion copy_env <源领地名称> <目标领地名称>` | 将环境标志从一个领地复制到另一个领地 |

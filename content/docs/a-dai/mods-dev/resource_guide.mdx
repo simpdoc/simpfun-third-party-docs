@@ -1,0 +1,1166 @@
+---
+title: "NeoForge 资源开发完全指南"
+author: "阿呆皮革厂"
+license: "CC BY-NC-SA 4.0"
+---
+* * *
+
+## 目录
+
+1.  [先建立全局认知：什么是“资源”](#1-%E5%85%88%E5%BB%BA%E7%AB%8B%E5%85%A8%E5%B1%80%E8%AE%A4%E7%9F%A5%E4%BB%80%E4%B9%88%E6%98%AF%E8%B5%84%E6%BA%90)
+    
+2.  [资源开发总方法论](#2-%E8%B5%84%E6%BA%90%E5%BC%80%E5%8F%91%E6%80%BB%E6%96%B9%E6%B3%95%E8%AE%BA)
+    
+3.  [工程目录与分层规范](#3-%E5%B7%A5%E7%A8%8B%E7%9B%AE%E5%BD%95%E4%B8%8E%E5%88%86%E5%B1%82%E8%A7%84%E8%8C%83)
+    
+4.  [客户端资源](#4-%E5%AE%A2%E6%88%B7%E7%AB%AF%E8%B5%84%E6%BA%90)
+    
+    -   4.1 [国际化与本地化（i18n/l10n）](#41-%E5%9B%BD%E9%99%85%E5%8C%96%E4%B8%8E%E6%9C%AC%E5%9C%B0%E5%8C%96i18nl10n)
+        
+    -   4.2 [纹理与图集](#42-%E7%BA%B9%E7%90%86%E4%B8%8E%E5%9B%BE%E9%9B%86)
+        
+    -   4.3 [模型](#43-%E6%A8%A1%E5%9E%8B)
+        
+    -   4.4 [粒子](#44-%E7%B2%92%E5%AD%90)
+        
+    -   4.5 [声音](#45-%E5%A3%B0%E9%9F%B3)
+        
+5.  [服务端资源](#5-%E6%9C%8D%E5%8A%A1%E7%AB%AF%E8%B5%84%E6%BA%90)
+    
+    -   5.1 [成就](#51-%E6%88%90%E5%B0%B1)
+        
+    -   5.2 [数据加载条件](#52-%E6%95%B0%E6%8D%AE%E5%8A%A0%E8%BD%BD%E6%9D%A1%E4%BB%B6)
+        
+    -   5.3 [伤害类型与伤害源](#53-%E4%BC%A4%E5%AE%B3%E7%B1%BB%E5%9E%8B%E4%B8%8E%E4%BC%A4%E5%AE%B3%E6%BA%90)
+        
+    -   5.4 [数据映射](#54-%E6%95%B0%E6%8D%AE%E6%98%A0%E5%B0%84)
+        
+    -   5.5 [附魔（含自定义附魔）](#55-%E9%99%84%E9%AD%94%E5%90%AB%E8%87%AA%E5%AE%9A%E4%B9%89%E9%99%84%E9%AD%94)
+        
+    -   5.6 [战利品表（含自定义对象、GLM、条件、函数）](#56-%E6%88%98%E5%88%A9%E5%93%81%E8%A1%A8%E5%90%AB%E8%87%AA%E5%AE%9A%E4%B9%89%E5%AF%B9%E8%B1%A1glm%E6%9D%A1%E4%BB%B6%E5%87%BD%E6%95%B0)
+        
+    -   5.7 [配方（内置 + 自定义且仅特定方块处理）](#57-%E9%85%8D%E6%96%B9%E5%86%85%E7%BD%AE--%E8%87%AA%E5%AE%9A%E4%B9%89%E4%B8%94%E4%BB%85%E7%89%B9%E5%AE%9A%E6%96%B9%E5%9D%97%E5%A4%84%E7%90%86)
+        
+    -   5.8 [标签](#58-%E6%A0%87%E7%AD%BE)
+        
+6.  [Datagen 一体化流水线模板（强烈推荐）](#6-datagen-%E4%B8%80%E4%BD%93%E5%8C%96%E6%B5%81%E6%B0%B4%E7%BA%BF%E6%A8%A1%E6%9D%BF%E5%BC%BA%E7%83%88%E6%8E%A8%E8%8D%90)
+    
+7.  [排错与诊断方法论（从“会写”到“会修”）](#7-%E6%8E%92%E9%94%99%E4%B8%8E%E8%AF%8A%E6%96%AD%E6%96%B9%E6%B3%95%E8%AE%BA%E4%BB%8E%E4%BC%9A%E5%86%99%E5%88%B0%E4%BC%9A%E4%BF%AE)
+    
+8.  [学习路径与里程碑（0→1→N）](#8-%E5%AD%A6%E4%B9%A0%E8%B7%AF%E5%BE%84%E4%B8%8E%E9%87%8C%E7%A8%8B%E7%A2%9101n)
+    
+9.  [最终交付清单（发布前自检）](#9-%E6%9C%80%E7%BB%88%E4%BA%A4%E4%BB%98%E6%B8%85%E5%8D%95%E5%8F%91%E5%B8%83%E5%89%8D%E8%87%AA%E6%A3%80)
+    
+
+* * *
+
+## 1\. 先建立全局认知：什么是“资源”
+
+在 NeoForge 里，“资源”不是一个文件夹概念，而是一个**数据驱动系统**。
+
+你会同时维护两类包：
+
+-   **Resource Pack（客户端）**：影响显示与听觉
+    
+    -   语言、模型、纹理、粒子、声音
+        
+-   **Data Pack（服务端/逻辑）**：影响规则与玩法
+    
+    -   成就、战利品、配方、标签、伤害类型、附魔、数据映射等
+        
+
+你可以这样理解：
+
+-   客户端资源解决“看起来/听起来是什么”
+    
+-   服务端资源解决“游戏规则是什么”
+    
+
+* * *
+
+## 2\. 资源开发总方法论
+
+### 2.1 四层法：定义 → 装配 → 生成 → 验证
+
+无论做哪种资源，都按同一个套路：
+
+1.  **定义（Definition）**
+    
+    -   明确“这个资源要表达什么语义”
+        
+2.  **装配（Wiring）**
+    
+    -   把资源接入注册、事件、序列化（Codec）等机制
+        
+3.  **生成（Generation）**
+    
+    -   尽量用 Datagen 产出，减少手写错误
+        
+4.  **验证（Validation）**
+    
+    -   启动日志、资源重载、数据校验、游戏内行为四级验证
+        
+
+### 2.2 三种错误类型
+
+你将遇到的 bug，几乎都可归类为：
+
+-   **路径错误**：命名空间、文件路径、后缀不对
+    
+-   **注册错误**：类型注册了但实例没接入；或实例有了但 type 没注册
+    
+-   **语义错误**：JSON 能读，但行为不对（条件没满足、上下文参数缺失等）
+    
+
+### 2.3 先跑“最小闭环”再扩展
+
+每一类资源都先做最小可用版本（MVP）：
+
+-   先“能加载、能触发、能看到”
+    
+-   再做复杂条件、跨模组兼容、性能优化
+    
+
+* * *
+
+## 3\. 工程目录与分层规范
+
+推荐你用下面的心智结构：
+
+```text
+src/main/
+├─ java/...                    # 注册、事件、逻辑、datagen provider
+├─ resources/
+│  ├─ assets/<modid>/          # 客户端资源
+│  │  ├─ lang/
+│  │  ├─ models/
+│  │  ├─ textures/
+│  │  ├─ particles/
+│  │  └─ sounds.json
+│  └─ data/<modid>/            # 服务端资源
+│     ├─ advancements/
+│     ├─ loot_tables/
+│     ├─ loot_modifiers/
+│     ├─ recipes/
+│     ├─ tags/
+│     ├─ damage_type/
+│     └─ data_maps/
+```
+
+要点：
+
+-   `assets` 和 `data` 是两套系统，不要混
+    
+-   一切 ID 默认是 `<modid>:<path>`
+    
+-   任何“硬编码字符串”都要谨慎，优先常量化
+    
+
+* * *
+
+## 4\. 客户端资源
+
+## 4.1 国际化与本地化（i18n/l10n）
+
+### 4.1.1 概念分离
+
+-   **i18n**：你定义翻译 key 的规则（`item.modid.xxx`）
+    
+-   **l10n**：你提供不同语言文件（`zh_cn.json`、`en_us.json`）
+    
+
+### 4.1.2 建议：lang 优先 Datagen
+
+使用 `LanguageProvider` 生成语言文件，避免重复 key 与拼写错误。
+
+#### 示例：语言 Datagen Provider
+
+```java
+public class ModLangZhProvider extends net.neoforged.neoforge.common.data.LanguageProvider {
+    public ModLangZhProvider(PackOutput output) {
+        super(output, "examplemod", "zh_cn");
+    }
+
+    @Override
+    protected void addTranslations() {
+        add("item.examplemod.copper_hammer", "铜锤");
+        add("block.examplemod.machine_block", "加工机");
+        add("sound.examplemod.machine_hum", "机器嗡鸣");
+        add("tag.item.examplemod.ingots.copper_like", "类铜锭");
+    }
+}
+```
+
+### 4.1.3 常见坑
+
+1.  key 重复（`LanguageProvider` 会抛异常）
+    
+2.  key 写对了但代码实际用的是另一个 key
+    
+3.  只写了 `zh_cn` 没写 `en_us`（跨语言环境排错困难）
+    
+
+* * *
+
+## 4.2 纹理与图集
+
+### 4.2.1 纹理不是“放进去就完事”
+
+纹理最终会进图集（Atlas）参与拼接。你需要明确：
+
+-   用的是哪个图集
+    
+-   这个贴图是否会被模型/粒子引用
+    
+
+### 4.2.2 图集声明示例
+
+```json
+{
+  "sources": [
+    {
+      "type": "minecraft:single",
+      "resource": "examplemod:white"
+    }
+  ]
+}
+```
+
+### 4.2.3 纹理方法论
+
+-   UI 纹理、方块纹理、粒子纹理分开目录
+    
+-   命名语义化（`machine_front_on`）而非临时名（`tex1`）
+    
+-   动图必须有 `.png.mcmeta`
+    
+
+* * *
+
+## 4.3 模型
+
+模型是客户端资源里最容易“看起来懂了，实战就乱”的系统。
+
+### 4.3.1 分层理解
+
+1.  **Unbaked（JSON/中间态）**
+    
+2.  **Baked（可渲染模型）**
+    
+3.  **Model Bakery 重载流程事件**
+    
+
+### 4.3.2 你必须知道的模型事件
+
+-   `ModelEvent.RegisterGeometryLoaders`：注册自定义 loader
+    
+-   `ModelEvent.RegisterAdditional`：注册额外模型依赖
+    
+-   `ModelEvent.ModifyBakingResult`：修改 baked 结果
+    
+-   `ModelEvent.BakingCompleted`：烘焙完成后只读观察
+    
+
+### 4.3.3 自定义模型 Loader（核心）
+
+#### 1) 注册 loader
+
+```java
+@SubscribeEvent
+public static void registerGeometryLoaders(net.neoforged.neoforge.client.event.ModelEvent.RegisterGeometryLoaders event) {
+    event.register(ResourceLocation.fromNamespaceAndPath("examplemod", "machine_loader"), new MachineGeometryLoader());
+}
+```
+
+#### 2) 实现 loader
+
+```java
+public final class MachineGeometryLoader implements net.neoforged.neoforge.client.model.geometry.IGeometryLoader<MachineUnbakedGeometry> {
+    @Override
+    public MachineUnbakedGeometry read(JsonObject json, JsonDeserializationContext context) {
+        boolean emissive = GsonHelper.getAsBoolean(json, "emissive", false);
+        return new MachineUnbakedGeometry(emissive);
+    }
+}
+```
+
+#### 3) 实现 geometry
+
+```java
+public final class MachineUnbakedGeometry implements net.neoforged.neoforge.client.model.geometry.IUnbakedGeometry<MachineUnbakedGeometry> {
+    private final boolean emissive;
+
+    public MachineUnbakedGeometry(boolean emissive) {
+        this.emissive = emissive;
+    }
+
+    @Override
+    public BakedModel bake(
+            net.neoforged.neoforge.client.model.geometry.IGeometryBakingContext context,
+            ModelBaker baker,
+            java.util.function.Function<Material, TextureAtlasSprite> spriteGetter,
+            ModelState modelState,
+            ItemOverrides overrides
+    ) {
+        // 教学示例：实际项目中返回你自己的 BakedModel 实现
+        // 可从 context 获取贴图、可见部件配置等
+        return baker.bake(context.getModelName(), modelState, spriteGetter);
+    }
+}
+```
+
+#### 4) 模型 JSON 使用 loader
+
+```json
+{
+  "parent": "minecraft:item/generated",
+  "loader": "examplemod:machine_loader",
+  "textures": {
+    "layer0": "examplemod:item/machine"
+  },
+  "emissive": true
+}
+```
+
+### 4.3.4 optional loader 与退化策略
+
+`loader` 可以写为对象并标记 `optional`：
+
+```json
+"loader": {
+  "id": "examplemod:machine_loader",
+  "optional": true
+}
+```
+
+含义：loader 不存在时允许回退到 vanilla 路径（仅在支持 inline elements 的场景有意义）。
+
+### 4.3.5 Model Datagen（推荐）
+
+用 `ItemModelProvider` / `BlockStateProvider` 生成模型与 blockstate，避免手写重复 JSON。
+
+方法论：
+
+-   手写只保留“特殊模型”
+    
+-   规则化模型全部 datagen
+    
+
+* * *
+
+## 4.4 粒子
+
+粒子是“注册 + 描述 + provider”三件套。
+
+### 4.4.1 provider 注册类型
+
+-   `registerSpecial`：非 JSON 粒子（无 texture list）
+    
+-   `registerSprite`：单贴图 JSON 粒子
+    
+-   `registerSpriteSet`：多贴图 JSON 粒子
+    
+
+```java
+@SubscribeEvent
+public static void registerParticleProviders(net.neoforged.neoforge.client.event.RegisterParticleProvidersEvent event) {
+    event.registerSprite(ModParticles.SPARK.get(), SparkParticle.Provider::new);
+    event.registerSpriteSet(ModParticles.MAGIC.get(), MagicParticle.Provider::new);
+    event.registerSpecial(ModParticles.RUNE.get(), RuneParticle.Provider::new);
+}
+```
+
+### 4.4.2 粒子描述 Datagen
+
+```java
+public class ModParticleDescriptionProvider extends net.neoforged.neoforge.common.data.ParticleDescriptionProvider {
+    public ModParticleDescriptionProvider(PackOutput output, ExistingFileHelper helper) {
+        super(output, helper);
+    }
+
+    @Override
+    protected void addDescriptions() {
+        sprite(ModParticles.SPARK.get(), ResourceLocation.fromNamespaceAndPath("examplemod", "spark"));
+        spriteSet(ModParticles.MAGIC.get(), ResourceLocation.fromNamespaceAndPath("examplemod", "magic"), 8, false);
+    }
+}
+```
+
+### 4.4.3 粒子常见坑
+
+1.  注册 `registerSpriteSet` 但没对应 `particles/<id>.json`
+    
+2.  `particles` JSON 有了，但贴图不存在（`ExistingFileHelper` 校验会炸）
+    
+3.  粒子类型注册在服务端逻辑里，客户端没绑定 provider
+    
+
+* * *
+
+## 4.5 声音
+
+声音系统要分两层：
+
+1.  **资源层（sounds.json + .ogg）**
+    
+2.  **播放层（SoundInstance：位置、衰减、relative）**
+    
+
+### 4.5.1 SoundDefinitions Datagen
+
+```java
+public class ModSoundDefinitionsProvider extends net.neoforged.neoforge.common.data.SoundDefinitionsProvider {
+    public ModSoundDefinitionsProvider(PackOutput output, ExistingFileHelper helper) {
+        super(output, "examplemod", helper);
+    }
+
+    @Override
+    public void registerSounds() {
+        add(ModSounds.MACHINE_HUM.get(),
+                definition()
+                        .subtitle("subtitle.examplemod.machine_hum")
+                        .with(sound("examplemod:machine/hum").volume(0.8f).pitch(1.0f).attenuationDistance(24))
+        );
+
+        add(ModSounds.MUSIC_THEME.get(),
+                definition()
+                        .with(sound("examplemod:music/theme").stream().volume(1.0f))
+        );
+
+        add(ModSounds.UI_CLICK.get(),
+                definition()
+                        .with(sound("examplemod:ui/click").preload())
+        );
+    }
+}
+```
+
+### 4.5.2 单音道 / 多音道 / 立体音怎么理解
+
+> 实际工程里常说“单声道/双声道(立体声)”更多是音频素材层属性； 你在代码里控制的是“是否空间化、是否衰减、是否相对相机”。
+
+-   **空间化（3D）**：`relative=false` + `Attenuation.LINEAR`
+    
+-   **非空间化（2D/UI）**：`relative=true` 或 `Attenuation.NONE`
+    
+-   **长音频（BGM）**：`stream=true`
+    
+-   **高频短音效**：可 `preload=true`（谨慎）
+    
+
+### 4.5.3 播放层示例
+
+```java
+public static void playMachineHum(BlockPos pos) {
+    Minecraft.getInstance().getSoundManager().play(
+            new net.minecraft.client.resources.sounds.SimpleSoundInstance(
+                    ModSounds.MACHINE_HUM.get().getLocation(),
+                    net.minecraft.sounds.SoundSource.BLOCKS,
+                    0.8f,
+                    1.0f,
+                    net.minecraft.client.resources.sounds.SoundInstance.createUnseededRandom(),
+                    true,
+                    0,
+                    net.minecraft.client.resources.sounds.SoundInstance.Attenuation.LINEAR,
+                    pos.getX() + 0.5,
+                    pos.getY() + 0.5,
+                    pos.getZ() + 0.5,
+                    false
+            )
+    );
+}
+```
+
+### 4.5.4 声音常见坑
+
+1.  `sounds.json` 条目存在，但 `.ogg` 路径错误（provider 会校验）
+    
+2.  BGM 忘记 `stream`，导致加载与内存问题
+    
+3.  想做 3D 声音却用 `Attenuation.NONE`
+    
+
+* * *
+
+## 5\. 服务端资源
+
+## 5.1 成就
+
+推荐用 NeoForge 的 `AdvancementProvider` 扩展版本（带 `ExistingFileHelper`）。
+
+### 示例
+
+```java
+public class ModAdvancementProvider extends net.neoforged.neoforge.common.data.AdvancementProvider {
+    public ModAdvancementProvider(PackOutput output,
+                                  CompletableFuture<HolderLookup.Provider> lookup,
+                                  ExistingFileHelper helper) {
+        super(output, lookup, helper, java.util.List.of(new MainAdvancements()));
+    }
+
+    public static class MainAdvancements implements AdvancementGenerator {
+        @Override
+        public void generate(HolderLookup.Provider registries,
+                             java.util.function.Consumer<AdvancementHolder> saver,
+                             ExistingFileHelper existingFileHelper) {
+            Advancement.Builder.advancement()
+                    .display(
+                            Items.DIAMOND,
+                            Component.literal("资源学徒"),
+                            Component.literal("第一次完成资源链路"),
+                            null,
+                            net.minecraft.advancements.FrameType.TASK,
+                            true, true, false
+                    )
+                    .addCriterion("got_diamond",
+                            net.minecraft.advancements.critereon.InventoryChangeTrigger.TriggerInstance.hasItems(Items.DIAMOND))
+                    .save(saver,
+                            ResourceLocation.fromNamespaceAndPath("examplemod", "main/resource_apprentice"),
+                            existingFileHelper);
+        }
+    }
+}
+```
+
+方法论：成就不是 UI 装饰，而是玩法里程碑。先画“玩家路径图”再写条件。
+
+* * *
+
+## 5.2 数据加载条件
+
+条件系统让你“按环境启用数据”（比如依赖另一个模组）。
+
+### 5.2.1 核心键
+
+-   `neoforge:conditions`
+    
+-   `neoforge:value`（当 carrier 不是 map 时封装值）
+    
+
+### 5.2.2 常见条件
+
+-   `mod_loaded`
+    
+-   `item_exists`
+    
+-   `tag_empty`
+    
+-   逻辑组合：`and/or/not`
+    
+
+### 5.2.3 JSON 示例
+
+```json
+{
+  "neoforge:conditions": [
+    { "type": "neoforge:mod_loaded", "modid": "anothermod" }
+  ],
+  "type": "minecraft:crafting_shaped",
+  "pattern": ["II", " S"],
+  "key": {
+    "I": { "item": "minecraft:iron_ingot" },
+    "S": { "item": "minecraft:stick" }
+  },
+  "result": { "id": "examplemod:conditional_hammer" }
+}
+```
+
+### 5.2.4 在 Datagen 中加条件
+
+```java
+@Override
+protected void buildRecipes(RecipeOutput output) {
+    var conditionalOut = output.withConditions(new net.neoforged.neoforge.common.conditions.ModLoadedCondition("anothermod"));
+
+    net.minecraft.data.recipes.ShapedRecipeBuilder.shaped(RecipeCategory.TOOLS, ModItems.HAMMER.get())
+            .pattern("II")
+            .pattern(" S")
+            .define('I', Items.IRON_INGOT)
+            .define('S', Items.STICK)
+            .unlockedBy("has_iron", has(Items.IRON_INGOT))
+            .save(conditionalOut);
+}
+```
+
+* * *
+
+## 5.3 伤害类型与伤害源
+
+### 5.3.1 DamageType 是数据，DamageSource 是运行时实例
+
+-   `DamageType`：数据包定义（JSON）
+    
+-   `DamageSource`：战斗时构造并应用
+    
+
+### 5.3.2 定义 DamageType
+
+`data/examplemod/damage_type/arcane_burn.json`
+
+```json
+{
+  "message_id": "magic",
+  "exhaustion": 0.0,
+  "scaling": "when_caused_by_living_non_player"
+}
+```
+
+### 5.3.3 代码侧 key 与 source
+
+```java
+public static final ResourceKey<net.minecraft.world.damagesource.DamageType> ARCANE_BURN =
+        ResourceKey.create(net.minecraft.core.registries.Registries.DAMAGE_TYPE,
+                ResourceLocation.fromNamespaceAndPath("examplemod", "arcane_burn"));
+
+public static DamageSource arcaneBurn(Level level, @Nullable Entity attacker) {
+    return level.damageSources().source(ARCANE_BURN, attacker);
+}
+```
+
+### 5.3.4 标签分类（推荐）
+
+给你的伤害类型打 tag，例如：`is_magic` / `is_environment`。这样你后续做抗性、免疫、UI 分类会更稳。
+
+* * *
+
+## 5.4 数据映射
+
+Data Map 是“给注册表对象附加可数据化属性”的机制。
+
+### 5.4.1 典型应用
+
+-   给 Item 挂燃料值
+    
+-   给 Block 挂可蜡化信息
+    
+-   给 EntityType 挂行为参数
+    
+
+### 5.4.2 注册 DataMapType
+
+```java
+public final class ModDataMaps {
+    public static final net.neoforged.neoforge.registries.datamaps.DataMapType<Item, FuelData> FUEL_BONUS =
+            net.neoforged.neoforge.registries.datamaps.DataMapType
+                    .builder(ResourceLocation.fromNamespaceAndPath("examplemod", "fuel_bonus"),
+                            net.minecraft.core.registries.Registries.ITEM,
+                            FuelData.CODEC)
+                    .synced(FuelData.CODEC, false)
+                    .build();
+
+    @SubscribeEvent
+    public static void register(net.neoforged.neoforge.registries.datamaps.RegisterDataMapTypesEvent event) {
+        event.register(FUEL_BONUS);
+    }
+}
+```
+
+### 5.4.3 Datagen 示例
+
+```java
+public class ModDataMapProvider extends net.neoforged.neoforge.common.data.DataMapProvider {
+    public ModDataMapProvider(PackOutput output, CompletableFuture<HolderLookup.Provider> lookup) {
+        super(output, lookup);
+    }
+
+    @Override
+    protected void gather() {
+        builder(ModDataMaps.FUEL_BONUS)
+                .add(Items.COAL.builtInRegistryHolder(), new FuelData(2000), false)
+                .add(net.minecraft.tags.ItemTags.LOGS, new FuelData(300), false)
+                .remove(ResourceLocation.fromNamespaceAndPath("minecraft", "kelp"));
+    }
+}
+```
+
+### 5.4.4 JSON 结构
+
+```json
+{
+  "replace": false,
+  "values": {
+    "minecraft:coal": { "burn_time": 2000 },
+    "#minecraft:logs": { "burn_time": 300 }
+  },
+  "remove": [
+    "minecraft:kelp"
+  ]
+}
+```
+
+### 5.4.5 AdvancedDataMapType 何时用
+
+当你需要：
+
+-   **冲突合并策略**（merger）
+    
+-   **细粒度移除策略**（remover）
+    
+
+否则普通 `DataMapType` 就够用。
+
+* * *
+
+## 5.5 附魔（含自定义附魔）
+
+1.21+ 附魔是数据驱动注册表对象，复杂度明显提高。
+
+### 5.5.1 先做最小附魔
+
+先定义：
+
+-   支持物品集合
+    
+-   等级、权重、花费、铁砧花费
+    
+-   槽位
+    
+-   暂不加复杂 effects（先跑通）
+    
+
+### 5.5.2 Datapack 注册生成通路
+
+用 `DatapackBuiltinEntriesProvider` + `RegistrySetBuilder` 把附魔条目写入数据包注册表。
+
+#### 示例骨架
+
+```java
+public class ModDatapackEntriesProvider extends net.neoforged.neoforge.common.data.DatapackBuiltinEntriesProvider {
+    public ModDatapackEntriesProvider(PackOutput output, CompletableFuture<HolderLookup.Provider> lookup) {
+        super(output, lookup, new RegistrySetBuilder()
+                        .add(net.minecraft.core.registries.Registries.ENCHANTMENT, ModEnchantments::bootstrap),
+                java.util.Set.of("examplemod"));
+    }
+}
+```
+
+```java
+public final class ModEnchantments {
+    public static final ResourceKey<Enchantment> ARCANE_EDGE = ResourceKey.create(
+            net.minecraft.core.registries.Registries.ENCHANTMENT,
+            ResourceLocation.fromNamespaceAndPath("examplemod", "arcane_edge")
+    );
+
+    public static void bootstrap(net.minecraft.data.worldgen.BootstrapContext<Enchantment> ctx) {
+        var itemLookup = ctx.lookup(net.minecraft.core.registries.Registries.ITEM);
+        var supported = net.minecraft.core.HolderSet.direct(itemLookup.getOrThrow(Items.DIAMOND_SWORD));
+
+        Enchantment ench = new Enchantment(
+                Component.translatable("enchantment.examplemod.arcane_edge"),
+                Enchantment.definition(
+                        supported,
+                        5,
+                        3,
+                        Enchantment.dynamicCost(5, 10),
+                        Enchantment.dynamicCost(25, 10),
+                        2,
+                        net.minecraft.world.entity.EquipmentSlotGroup.MAINHAND
+                ),
+                net.minecraft.core.HolderSet.direct(),
+                net.minecraft.core.component.DataComponentMap.EMPTY
+        );
+
+        ctx.register(ARCANE_EDGE, ench);
+    }
+}
+```
+
+### 5.5.3 自定义附魔的进阶路线
+
+-   第 1 阶段：先定义附魔对象（可加载）
+    
+-   第 2 阶段：加 tags（进附魔台/战利品池/交易池）
+    
+-   第 3 阶段：加 effects 组件（伤害、属性、触发行为）
+    
+-   第 4 阶段：做平衡与互斥（exclusive\_set + tags）
+    
+
+* * *
+
+## 5.6 战利品表（含自定义对象、GLM、条件、函数）
+
+你可以在 3 个层面扩展战利品：
+
+1.  **Loot Table 本体**（data/.../loot\_table）
+    
+2.  **自定义对象类型**（Entry / Condition / Function）
+    
+3.  **Global Loot Modifier（全局后处理）**
+    
+
+### 5.6.1 Custom Loot Condition 示例
+
+```java
+public class LootTableIdCondition implements LootItemCondition {
+    public static final MapCodec<LootTableIdCondition> CODEC = RecordCodecBuilder.mapCodec(builder -> builder
+            .group(ResourceLocation.CODEC.fieldOf("loot_table_id").forGetter(c -> c.targetLootTableId))
+            .apply(builder, LootTableIdCondition::new));
+
+    public static final LootItemConditionType TYPE = new LootItemConditionType(CODEC);
+
+    private final ResourceLocation targetLootTableId;
+
+    private LootTableIdCondition(ResourceLocation id) {
+        this.targetLootTableId = id;
+    }
+
+    @Override
+    public LootItemConditionType getType() {
+        return TYPE;
+    }
+
+    @Override
+    public boolean test(LootContext ctx) {
+        return ctx.getQueriedLootTableId().equals(this.targetLootTableId);
+    }
+}
+```
+
+### 5.6.2 Custom Loot Function / Entry 思路
+
+原理和 Condition 一样：
+
+-   定义 codec
+    
+-   注册 type（`LootItemFunctionType` / `LootPoolEntryType`）
+    
+-   JSON 中通过 `type` 使用
+    
+
+### 5.6.3 Global Loot Modifier（GLM）
+
+GLM 是“全局后处理”：任何战利品表产出后都可再过一遍。
+
+#### 1) Modifier 类
+
+```java
+public class ExtraGemLootModifier extends net.neoforged.neoforge.common.loot.LootModifier {
+    public static final MapCodec<ExtraGemLootModifier> CODEC = RecordCodecBuilder.mapCodec(inst ->
+            codecStart(inst).apply(inst, ExtraGemLootModifier::new)
+    );
+
+    protected ExtraGemLootModifier(LootItemCondition[] conditions) {
+        super(conditions);
+    }
+
+    @Override
+    protected it.unimi.dsi.fastutil.objects.ObjectArrayList<ItemStack> doApply(
+            it.unimi.dsi.fastutil.objects.ObjectArrayList<ItemStack> generatedLoot,
+            LootContext context
+    ) {
+        if (context.getRandom().nextFloat() < 0.2f) {
+            generatedLoot.add(new ItemStack(Items.DIAMOND));
+        }
+        return generatedLoot;
+    }
+
+    @Override
+    public MapCodec<? extends net.neoforged.neoforge.common.loot.IGlobalLootModifier> codec() {
+        return CODEC;
+    }
+}
+```
+
+#### 2) Datagen 输出 GLM
+
+```java
+public class ModGlobalLootModifierProvider extends net.neoforged.neoforge.common.data.GlobalLootModifierProvider {
+    public ModGlobalLootModifierProvider(PackOutput output, CompletableFuture<HolderLookup.Provider> registries) {
+        super(output, registries, "examplemod");
+    }
+
+    @Override
+    protected void start() {
+        add("extra_gem", new ExtraGemLootModifier(new LootItemCondition[]{}));
+    }
+}
+```
+
+### 5.6.4 GLM 顺序很关键
+
+`global_loot_modifiers.json` 中 `entries` 顺序就是执行顺序；后置 modifier 能看到前置结果。
+
+* * *
+
+## 5.7 配方（内置 + 自定义且仅特定方块处理）
+
+### 5.7.1 内置配方
+
+内置类型（shaped/shapeless/smelting 等）优先 Datagen。
+
+### 5.7.2 自定义配方：只在特定方块进行
+
+本质是：
+
+-   自定义 `RecipeType` + `RecipeSerializer`
+    
+-   由“机器方块对应的容器/菜单”调用匹配与消耗
+    
+-   不接入工作台容器，自然不会在工作台合成
+    
+
+#### 最小骨架
+
+```java
+public class MachineRecipe implements Recipe<MachineInput> {
+    public static final RecipeType<MachineRecipe> TYPE = new RecipeType<>() {
+        @Override
+        public String toString() { return "examplemod:machine_crafting"; }
+    };
+
+    private final Ingredient input;
+    private final ItemStack output;
+
+    @Override
+    public boolean matches(MachineInput inv, Level level) {
+        return input.test(inv.getItem(0));
+    }
+
+    @Override
+    public ItemStack assemble(MachineInput inv, HolderLookup.Provider registries) {
+        return output.copy();
+    }
+
+    @Override
+    public RecipeSerializer<?> getSerializer() {
+        return ModRecipeSerializers.MACHINE.get();
+    }
+
+    @Override
+    public RecipeType<?> getType() {
+        return TYPE;
+    }
+}
+```
+
+`data/examplemod/recipes/copper_plate.json`
+
+```json
+{
+  "type": "examplemod:machine_crafting",
+  "ingredient": { "item": "minecraft:copper_ingot" },
+  "result": {
+    "id": "examplemod:copper_plate",
+    "count": 1
+  },
+  "process_time": 120
+}
+```
+
+### 5.7.3 自定义 Ingredient（高级）
+
+当原版 `Ingredient` 不够时，实现 `ICustomIngredient` 并注册 `IngredientType`。
+
+用途示例：
+
+-   必须包含特定 DataComponent/NBT
+    
+-   允许差集/交集配料
+    
+
+* * *
+
+## 5.8 标签
+
+Tag 是跨系统的“语义胶水”。
+
+### 5.8.1 什么时候优先 Tag
+
+-   规则作用于“类别”而不是“单个对象”
+    
+-   需要跨模组兼容
+    
+-   未来可能扩展对象集合
+    
+
+### 5.8.2 Tag JSON 示例
+
+```json
+{
+  "replace": false,
+  "values": [
+    "examplemod:arcane_ingot",
+    "#c:ingots/iron"
+  ]
+}
+```
+
+### 5.8.3 可选兼容写法
+
+```json
+{
+  "values": [
+    {
+      "id": "#forge:is_poison",
+      "required": false
+    }
+  ]
+}
+```
+
+### 5.8.4 Tag 方法论
+
+-   先设计“语义标签层”（如 `is_magic_damage`, `machine_fuels`）
+    
+-   再让配方/战利品/条件/AI 依赖这些语义层
+    
+-   不要让系统直接硬编码具体物品 ID
+    
+
+* * *
+
+## 6\. Datagen 一体化流水线模板（强烈推荐）
+
+```java
+@Mod.EventBusSubscriber(modid = "examplemod", bus = Mod.EventBusSubscriber.Bus.MOD)
+public final class ModDatagenEntrypoint {
+    @SubscribeEvent
+    public static void gatherData(net.neoforged.neoforge.data.event.GatherDataEvent event) {
+        var gen = event.getGenerator();
+        PackOutput output = gen.getPackOutput();
+        ExistingFileHelper efh = event.getExistingFileHelper();
+        CompletableFuture<HolderLookup.Provider> lookup = event.getLookupProvider();
+
+        // Client
+        gen.addProvider(event.includeClient(), new ModLangZhProvider(output));
+        gen.addProvider(event.includeClient(), new ModParticleDescriptionProvider(output, efh));
+        gen.addProvider(event.includeClient(), new ModSoundDefinitionsProvider(output, efh));
+
+        // Server
+        gen.addProvider(event.includeServer(), new ModAdvancementProvider(output, lookup, efh));
+        gen.addProvider(event.includeServer(), new ModDataMapProvider(output, lookup));
+        gen.addProvider(event.includeServer(), new ModGlobalLootModifierProvider(output, lookup));
+        gen.addProvider(event.includeServer(), new ModRecipeProvider(output, lookup));
+
+        // Datapack registry entries（如自定义附魔）
+        gen.addProvider(event.includeServer(), new ModDatapackEntriesProvider(output, lookup));
+    }
+}
+```
+
+方法论：
+
+-   能 datagen 的都 datagen
+    
+-   手写 JSON 仅限“高度自定义且不适合模板化”的部分
+    
+
+* * *
+
+## 7\. 排错与诊断方法论（从“会写”到“会修”）
+
+### 7.1 四级诊断
+
+1.  **加载级**：游戏是否成功进主界面（资源/数据是否能解析）
+    
+2.  **注册级**：对应注册表是否有对象
+    
+3.  **引用级**：ID 与路径是否一致
+    
+4.  **行为级**：触发条件是否满足、上下文是否正确
+    
+
+### 7.2 你应该固定检查的日志关键词
+
+-   Missing resource / Missing texture
+    
+-   Could not decode / Codec parse failed
+    
+-   Unknown type / Unregistered serializer
+    
+-   Duplicate key / Already exists
+    
+
+### 7.3 高频故障清单
+
+-   资源命名空间写错（`minecraft:` / `<modid>:` 混淆）
+    
+-   只注册 type，忘记注册实例（或反过来）
+    
+-   条件系统 key 写错（必须是 `neoforge:conditions`）
+    
+-   自定义模型 loader 注册时机不对（应在模型事件）
+    
+-   GLM 顺序导致“看似随机”的行为差异
+    
+
+* * *
+
+## 8\. 学习路径与里程碑（0→1→N）
+
+### 阶段 A（入门闭环）
+
+-   一个物品：贴图 + 模型 + 中英文语言
+    
+-   一个粒子：JSON + provider
+    
+-   一个声音：`sounds.json` + 播放
+    
+
+### 阶段 B（规则闭环）
+
+-   一个成就
+    
+-   一个配方（含条件）
+    
+-   一个 loot table + 一个 tag
+    
+
+### 阶段 C（高级闭环）
+
+-   一个 Data Map
+    
+-   一个自定义 GLM
+    
+-   一个自定义附魔（最小定义）
+    
+-   一个自定义配方类型（仅机器方块可处理）
+    
+
+### 阶段 D（工程化）
+
+-   全量 datagen
+    
+-   自动化验证（数据生成 + 启动检查）
+    
+-   跨模组兼容策略（条件 + optional tag）
+    
+
+* * *
+
+## 9\. 最终交付清单（发布前自检）
+
+-    所有资源 ID 统一命名规范
+    
+-    客户端资源与服务端资源分层清晰
+    
+-    可 datagen 的资源都已纳入 provider
+    
+-    条件加载路径可覆盖“有依赖/无依赖”两种环境
+    
+-    自定义序列化对象（codec/type）均已注册
+    
+-    核心玩法资源有对应 tag 抽象层
+    
+-    关键日志无 decode/missing/duplicate 错误
+    
+-    至少完成一次“全新存档”测试
+    
+
+* * *
+
+## 结语：你真正要掌握的不是 JSON，而是“资源架构能力”
+
+当你按本文方法做资源开发时，你会明显感觉到：
+
+-   新功能迭代速度更快
+    
+-   排错路径更稳定
+    
+-   跨版本迁移更可控
+    
+-   与其他模组兼容更容易
+    
+
+资源开发的本质不是“写文件”，而是**构建可演化的游戏数据系统**。

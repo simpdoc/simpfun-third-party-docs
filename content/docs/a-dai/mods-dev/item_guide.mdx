@@ -1,0 +1,805 @@
+---
+title: "NeoForge 物品开发教程"
+author: "阿呆皮革厂"
+license: "CC BY-NC-SA 4.0"
+---
+* * *
+
+## 目录
+
+1.  [前置知识：如何阅读源码](#1-%E5%89%8D%E7%BD%AE%E7%9F%A5%E8%AF%86%E5%A6%82%E4%BD%95%E9%98%85%E8%AF%BB%E6%BA%90%E7%A0%81)
+    
+2.  [理解注册系统：从源码看原理](#2-%E7%90%86%E8%A7%A3%E6%B3%A8%E5%86%8C%E7%B3%BB%E7%BB%9F%E4%BB%8E%E6%BA%90%E7%A0%81%E7%9C%8B%E5%8E%9F%E7%90%86)
+    
+3.  [读懂构造函数结构](#3-%E8%AF%BB%E6%87%82%E6%9E%84%E9%80%A0%E5%87%BD%E6%95%B0%E7%BB%93%E6%9E%84)
+    
+4.  [找到注册方式：DeferredRegister](#4-%E6%89%BE%E5%88%B0%E6%B3%A8%E5%86%8C%E6%96%B9%E5%BC%8Fdeferredregister)
+    
+5.  [写一个最简单的物品](#5-%E5%86%99%E4%B8%80%E4%B8%AA%E6%9C%80%E7%AE%80%E5%8D%95%E7%9A%84%E7%89%A9%E5%93%81)
+    
+6.  [添加贴图和模型](#6-%E6%B7%BB%E5%8A%A0%E8%B4%B4%E5%9B%BE%E5%92%8C%E6%A8%A1%E5%9E%8B)
+    
+7.  [添加到创造模式物品栏](#7-%E6%B7%BB%E5%8A%A0%E5%88%B0%E5%88%9B%E9%80%A0%E6%A8%A1%E5%BC%8F%E7%89%A9%E5%93%81%E6%A0%8F)
+    
+8.  [完整流程总结与方法论](#8-%E5%AE%8C%E6%95%B4%E6%B5%81%E7%A8%8B%E6%80%BB%E7%BB%93%E4%B8%8E%E6%96%B9%E6%B3%95%E8%AE%BA)
+    
+
+* * *
+
+## 1\. 前置知识：如何阅读源码
+
+### 1.1 源码在哪里？
+
+在IDEA中打开一个 NeoForge 项目,导入后进行gradlew clean build后,会自动下载依赖  
+在 External Libraries(外部库)中找到 `neoforge-21.0.167-merged`，展开后会显示 `library根目录` ，这就是我们要的源码。  
+按住Ctrl左键,全选包括assets/com.mojang文件夹在内的所有文件夹和文件,右键Copy,粘贴到你电脑的任意位置,就得到了完整的NeoForge源码了。
+
+**关键目录结构：**
+
+```
+neoforge源码/
+├── net/neoforged/neoforge/
+│   ├── registries/          ← 注册系统（最重要！）
+│   │   ├── DeferredRegister.java
+│   │   ├── DeferredHolder.java
+│   │   ├── DeferredItem.java
+│   │   └── RegisterEvent.java
+│   ├── event/               ← 游戏事件
+│   │   └── BuildCreativeModeTabContentsEvent.java
+│   └── client/
+│       └── event/           ← 客户端事件（渲染、模型等）
+│           └── ModelEvent.java
+```
+
+### 1.2 阅读源码的方法论
+
+**第一步：看类的 Javadoc（类注释）**
+
+打开任何一个 `.java` 文件，最顶部的 `/** ... */` 注释就是 Javadoc，它会告诉你这个类是做什么的。
+
+以 `DeferredRegister` 为例：
+
+```java
+/**
+ * A helper class to aid in registering objects to modded and
+ * {@linkplain BuiltInRegistries vanilla registries} and
+ * provide deferred suppliers to access those objects.
+ * ...
+ */
+public class DeferredRegister<T> {
+```
+
+**翻译：** 这是一个辅助类，用于将对象注册到模组或原版注册表，并提供延迟访问这些对象的 Supplier。
+
+**第二步：看类的静态工厂方法**
+
+大多数 NeoForge 类不让你直接 `new`，而是通过静态方法创建实例。找 `public static` 开头的方法：
+
+```java
+// 在 DeferredRegister.java 第 142 行
+public static DeferredRegister.Items createItems(String modid) {
+    return new Items(modid);
+}
+```
+
+**第三步：看方法签名，理解参数含义**
+
+方法签名 = 返回类型 + 方法名 + 参数列表。每个参数上方通常有 `@param` 注释说明含义。
+
+**第四步：顺着调用链追踪**
+
+看到一个方法调用了另一个方法，就去找那个方法的定义，理解整个调用链。
+
+* * *
+
+## 2\. 理解注册系统：从源码看原理
+
+### 2.1 为什么需要"注册"？
+
+Minecraft 有一个全局注册表（Registry），所有物品、方块、实体等都必须先注册到这个表里，游戏才能识别它们。
+
+### 2.2 注册的时机问题
+
+**问题：** 游戏启动时，各个模组的代码会在不同时间点被加载，如果你在错误的时间注册物品，游戏会崩溃。
+
+**解决方案：延迟注册（Deferred Registration）**
+
+NeoForge 的解决方案是：先把"要注册什么"记录下来，等游戏发出 `RegisterEvent` 信号时，再统一注册。
+
+从 `RegisterEvent.java` 的注释可以看到：
+
+```java
+/**
+ * Fired for each registry when it is ready to have modded objects registered.
+ * This event is fired for all builtin registries from vanilla and mods.
+ * This event is fired on the mod-specific event bus, on both logical sides.
+ */
+public class RegisterEvent extends Event implements IModBusEvent {
+```
+
+**翻译：** 当注册表准备好接受模组对象注册时触发。在 Mod 专用事件总线上触发，两端（客户端/服务端）都会触发。
+
+### 2.3 事件总线（Event Bus）是什么？
+
+NeoForge 有两种事件总线：
+
+-   **Mod 事件总线（**`IEventBus`**）**：处理模组生命周期事件，如注册、初始化
+    
+-   **游戏事件总线（**`NeoForge.EVENT_BUS`**）**：处理游戏运行时事件，如玩家交互
+    
+
+物品注册使用 **Mod 事件总线**。
+
+* * *
+
+## 3\. 读懂构造函数结构
+
+### 3.1 如何找到一个类的构造函数？
+
+在 Java 中，构造函数与类同名，没有返回类型。
+
+以 `DeferredItem` 为例：
+
+```java
+// 第 60 行
+protected DeferredItem(ResourceKey<Item> key) {
+    super(key);  // 调用父类 DeferredHolder 的构造函数
+}
+```
+
+这个构造函数是 `protected`（受保护的），意味着你不能直接 `new DeferredItem(...)`，必须通过工厂方法创建。
+
+### 3.2 追踪父类构造函数
+
+`DeferredItem` 继承自 `DeferredHolder`：
+
+```java
+public class DeferredItem<T extends Item> extends DeferredHolder<Item, T> implements ItemLike {
+```
+
+`DeferredHolder` 的构造函数：
+
+```java
+protected DeferredHolder(ResourceKey<R> key) {
+    this.key = Objects.requireNonNull(key);
+    this.bind(false);  // 尝试立即绑定到注册表
+}
+```
+
+**方法论：** 看到 `extends` 关键字，就去找父类的构造函数，理解整个继承链。
+
+### 3.3 理解泛型参数
+
+`DeferredHolder<R, T extends R>` 中：
+
+-   `R` = 注册表类型（如 `Item`）
+    
+-   `T` = 具体子类型（如你自定义的 `MySword extends Item`）
+    
+
+`DeferredItem<T extends Item>` 简化了这个，固定了 `R = Item`。
+
+### 3.4 `Item.Properties` 的构造
+
+`Item.Properties` 是一个**建造者模式（Builder Pattern）**的类，用于配置物品属性。
+
+在 `DeferredRegister.java` 的示例代码中可以看到：
+
+```java
+// 注册一个简单物品，使用默认属性
+public DeferredItem<Item> registerSimpleItem(String name, Item.Properties props) {
+    return this.registerItem(name, Item::new, props);
+}
+```
+
+`Item.Properties` 的常用配置方法（来自 Minecraft 原版代码）：
+
+```java
+new Item.Properties()
+    .stacksTo(64)          // 最大堆叠数量
+    .durability(100)       // 耐久度（设置后不可堆叠）
+    .fireResistant()       // 防火
+    .rarity(Rarity.RARE)   // 稀有度（影响物品名颜色）
+```
+
+* * *
+
+## 4\. 找到注册方式：DeferredRegister
+
+### 4.1 从源码注释找到正确用法
+
+`DeferredRegister.java` 的类注释里直接给出了完整示例：
+
+```java
+// 源码第 52-77 行的示例代码（直接从 Javadoc 提取）
+private static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(MODID);
+private static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(MODID);
+
+// 注册简单物品
+public static final DeferredItem<BlockItem> ROCK_ITEM = 
+    ITEMS.registerSimpleBlockItem(ROCK_BLOCK, new Item.Properties());
+
+// 注册自定义物品
+public static final DeferredItem<SpecialRockItem> SPECIAL_ROCK_ITEM = 
+    ITEMS.register("special_rock",
+        () -> new SpecialRockItem(SPECIAL_ROCK_BLOCK.get(), new Item.Properties()));
+
+public ExampleMod(IEventBus modBus) {
+    ITEMS.register(modBus);   // 必须调用！
+    BLOCKS.register(modBus);
+}
+```
+
+### 4.2 `DeferredRegister.Items` 内部类
+
+`DeferredRegister.Items` 是专门为物品设计的子类：
+
+```java
+// 第 438-440 行
+public static class Items extends DeferredRegister<Item> {
+    protected Items(String namespace) {
+        super(Registries.ITEM, namespace);  // 固定注册到 ITEM 注册表
+    }
+```
+
+它提供了多个便捷方法：
+
+| 方法 | 用途 |
+| --- | --- |
+| `registerSimpleItem(name)` | 注册最简单的物品（默认属性） |
+| `registerSimpleItem(name, props)` | 注册简单物品（自定义属性） |
+| `registerItem(name, func)` | 注册自定义物品类（默认属性） |
+| `registerItem(name, func, props)` | 注册自定义物品类（自定义属性） |
+| `register(name, supplier)` | 最通用的注册方式 |
+| `registerSimpleBlockItem(block)` | 为方块注册对应物品 |
+
+### 4.3 `register()` 方法的核心逻辑
+
+```java
+// DeferredRegister.java 第 209-223 行
+public <I extends T> DeferredHolder<T, I> register(
+        final String name, 
+        final Function<ResourceLocation, ? extends I> func) {
+    
+    // 防止在 RegisterEvent 之后注册
+    if (seenRegisterEvent)
+        throw new IllegalStateException("Cannot register new entries to DeferredRegister after RegisterEvent has been fired.");
+    
+    // 自动拼接命名空间：modid:name
+    final ResourceLocation key = ResourceLocation.fromNamespaceAndPath(namespace, name);
+    
+    // 创建 DeferredHolder 并存入列表
+    DeferredHolder<T, I> ret = createHolder(this.registryKey, key);
+    entries.putIfAbsent(ret, () -> func.apply(key));
+    
+    return ret;
+}
+```
+
+**关键点：** 注册时只是把"工厂函数"存起来，实际创建对象发生在 `RegisterEvent` 触发时。
+
+* * *
+
+## 5\. 写一个最简单的物品
+
+### 5.1 项目结构
+
+```
+src/main/java/com/yourmod/
+├── YourMod.java              ← 主类（Mod 入口）
+└── item/
+    └── ModItems.java         ← 物品注册类
+
+src/main/resources/
+├── META-INF/
+│   └── neoforge.mods.toml    ← Mod 配置文件
+└── assets/yourmod/
+    ├── lang/
+    │   └── zh_cn.json        ← 中文翻译
+    ├── models/
+    │   └── item/
+    │       └── my_item.json  ← 物品模型
+    └── textures/
+        └── item/
+            └── my_item.png   ← 物品贴图
+```
+
+### 5.2 第一步：创建物品注册类
+
+```java
+// src/main/java/com/yourmod/item/ModItems.java
+package com.yourmod.item;
+
+import net.minecraft.world.item.Item;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.registries.DeferredItem;
+import net.neoforged.neoforge.registries.DeferredRegister;
+
+public class ModItems {
+    
+    // 第一步：创建 DeferredRegister.Items 实例
+    // 参数是你的 Mod ID（必须与 neoforge.mods.toml 中一致）
+    public static final DeferredRegister.Items ITEMS = 
+        DeferredRegister.createItems("yourmod");
+    
+    // 第二步：注册物品
+    // registerSimpleItem 对应源码第 588 行
+    public static final DeferredItem<Item> MY_ITEM = 
+        ITEMS.registerSimpleItem("my_item", new Item.Properties());
+    
+    // 第三步：提供注册方法，供主类调用
+    public static void register(IEventBus modEventBus) {
+        ITEMS.register(modEventBus);
+    }
+}
+```
+
+### 5.3 第二步：在主类中调用注册
+
+```java
+// src/main/java/com/yourmod/YourMod.java
+package com.yourmod;
+
+import com.yourmod.item.ModItems;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.common.Mod;
+
+@Mod("yourmod")  // Mod ID 必须与 neoforge.mods.toml 一致
+public class YourMod {
+    
+    public YourMod(IEventBus modEventBus) {
+        // 调用各个注册类的 register 方法
+        ModItems.register(modEventBus);
+    }
+}
+```
+
+### 5.4 为什么要用 `static final`？
+
+```java
+// 正确写法
+public static final DeferredItem<Item> MY_ITEM = 
+    ITEMS.registerSimpleItem("my_item", new Item.Properties());
+```
+
+-   `static`：物品注册是全局的，不属于任何实例
+    
+-   `final`：注册后不应该被重新赋值
+    
+-   类加载时就会执行右边的代码，将物品加入待注册列表
+    
+
+### 5.5 自定义物品类（进阶）
+
+如果你需要给物品添加特殊行为（比如右键效果），需要继承 `Item`：
+
+```java
+// src/main/java/com/yourmod/item/MySword.java
+package com.yourmod.item;
+
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
+
+public class MySword extends Item {
+    
+    // 构造函数必须接受 Item.Properties 参数
+    // 这是 NeoForge 的约定（registerItem 方法会传入 Properties）
+    public MySword(Properties properties) {
+        super(properties);
+    }
+    
+    // 重写右键使用方法
+    @Override
+    public InteractionResultHolder<ItemStack> use(
+            Level level, Player player, InteractionHand hand) {
+        // 你的逻辑
+        return super.use(level, player, hand);
+    }
+}
+```
+
+注册自定义物品类：
+
+```java
+// 在 ModItems.java 中
+// 对应源码 DeferredRegister.java 第 544 行的 registerItem(name, func, props)
+public static final DeferredItem<MySword> MY_SWORD = 
+    ITEMS.registerItem(
+        "my_sword",           // 物品 ID
+        MySword::new,         // 构造函数引用（等价于 props -> new MySword(props)）
+        new Item.Properties().durability(250)  // 属性
+    );
+```
+
+**方法论解析：** `MySword::new` 是方法引用，等价于 `(props) -> new MySword(props)`。这正好符合 `registerItem` 要求的 `Function<Item.Properties, ? extends I>` 参数类型。
+
+* * *
+
+## 6\. 添加贴图和模型
+
+### 6.1 资源文件的命名规则
+
+NeoForge/Minecraft 使用**资源位置（ResourceLocation）**来定位资源文件：
+
+```
+格式：命名空间:路径
+示例：yourmod:item/my_item
+```
+
+对应的文件路径：
+
+```
+src/main/resources/assets/yourmod/textures/item/my_item.png
+src/main/resources/assets/yourmod/models/item/my_item.json
+```
+
+**关键规则：** 物品 ID（注册时的 `"my_item"`）必须与资源文件名完全一致（小写，下划线分隔）。
+
+### 6.2 贴图文件（PNG）
+
+**规格要求：**
+
+-   尺寸：**16×16 像素**（标准物品贴图）
+    
+-   格式：PNG（支持透明度）
+    
+-   位置：`src/main/resources/assets/yourmod/textures/item/my_item.png`
+    
+
+**制作工具推荐：**
+
+-   [Blockbench](https://www.blockbench.net/)（免费，专为 Minecraft 设计）
+    
+-   Aseprite（付费，像素画专业工具）
+    
+-   GIMP（免费，通用图像编辑器）
+    
+
+### 6.3 物品模型文件（JSON）
+
+物品模型文件告诉游戏如何渲染这个物品。
+
+**最简单的平面物品模型：**
+
+```json
+// src/main/resources/assets/yourmod/models/item/my_item.json
+{
+    "parent": "minecraft:item/generated",
+    "textures": {
+        "layer0": "yourmod:item/my_item"
+    }
+}
+```
+
+**字段解析：**
+
+-   `"parent": "minecraft:item/generated"` — 继承原版的平面物品渲染方式（适合大多数物品）
+    
+-   `"textures"` — 贴图映射
+    
+-   `"layer0"` — 第一层贴图（`generated` 类型支持多层叠加）
+    
+-   `"yourmod:item/my_item"` — 指向 `assets/yourmod/textures/item/my_item.png`
+    
+
+**手持工具类物品（有握持偏移）：**
+
+```json
+{
+    "parent": "minecraft:item/handheld",
+    "textures": {
+        "layer0": "yourmod:item/my_sword"
+    }
+}
+```
+
+**3D 方块物品（继承方块模型）：**
+
+```json
+{
+    "parent": "yourmod:block/my_block"
+}
+```
+
+### 6.4 语言文件（翻译）
+
+```json
+// src/main/resources/assets/yourmod/lang/zh_cn.json
+{
+    "item.yourmod.my_item": "我的物品",
+    "item.yourmod.my_sword": "我的剑"
+}
+```
+
+```json
+// src/main/resources/assets/yourmod/lang/en_us.json
+{
+    "item.yourmod.my_item": "My Item",
+    "item.yourmod.my_sword": "My Sword"
+}
+```
+
+**翻译键格式：** `item.{modid}.{item_id}`
+
+### 6.5 模型与源码的关系
+
+从 `ModelEvent.RegisterAdditional` 可以看到，NeoForge 允许手动注册额外模型：
+
+```java
+// 源码第 139-158 行
+public static class RegisterAdditional extends ModelEvent implements IModBusEvent {
+    /**
+     * Registers a model to be loaded, along with its dependencies.
+     * The ModelResourceLocation passed to this method must later be used to recover the loaded model.
+     */
+    public void register(ModelResourceLocation model) {
+        models.add(model);
+    }
+}
+```
+
+对于普通物品，**不需要**手动注册模型——游戏会自动根据物品 ID 查找对应的 JSON 文件。只有特殊情况（如自定义渲染器）才需要用到这个事件。
+
+* * *
+
+## 7\. 添加到创造模式物品栏
+
+### 7.1 使用 `BuildCreativeModeTabContentsEvent`
+
+从 `BuildCreativeModeTabContentsEvent.java` 的注释：
+
+```java
+/**
+ * Fired when the contents of a specific creative mode tab are being populated.
+ * This event may be fired multiple times if the operator status of the local player
+ * or enabled feature flags changes.
+ */
+public final class BuildCreativeModeTabContentsEvent extends Event implements IModBusEvent, CreativeModeTab.Output {
+```
+
+**使用方式：**
+
+```java
+// 在你的主类或专门的事件处理类中
+import net.minecraft.world.item.CreativeModeTabs;
+import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
+
+// 在构造函数中注册事件监听器
+public YourMod(IEventBus modEventBus) {
+    ModItems.register(modEventBus);
+    
+    // 监听创造模式物品栏填充事件
+    modEventBus.addListener(this::addCreative);
+}
+
+// 事件处理方法
+private void addCreative(BuildCreativeModeTabContentsEvent event) {
+    // 判断是哪个物品栏
+    if (event.getTabKey() == CreativeModeTabs.INGREDIENTS) {
+        // 添加物品到该物品栏
+        event.accept(ModItems.MY_ITEM);
+    }
+}
+```
+
+### 7.2 常用原版物品栏
+
+| 物品栏常量 | 对应游戏中的标签页 |
+| --- | --- |
+| `CreativeModeTabs.BUILDING_BLOCKS` | 建筑方块 |
+| `CreativeModeTabs.TOOLS_AND_UTILITIES` | 工具与实用品 |
+| `CreativeModeTabs.COMBAT` | 战斗 |
+| `CreativeModeTabs.FOOD_AND_DRINKS` | 食物与饮料 |
+| `CreativeModeTabs.INGREDIENTS` | 原材料 |
+| `CreativeModeTabs.SPAWN_EGGS` | 刷怪蛋 |
+
+### 7.3 创建自定义物品栏
+
+```java
+import net.minecraft.world.item.CreativeModeTab;
+import net.neoforged.neoforge.registries.DeferredRegister;
+import net.minecraft.core.registries.Registries;
+
+public class ModCreativeTabs {
+    
+    public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS =
+        DeferredRegister.create(Registries.CREATIVE_MODE_TAB, "yourmod");
+    
+    public static final DeferredHolder<CreativeModeTab, CreativeModeTab> EXAMPLE_TAB =
+        CREATIVE_MODE_TABS.register("example_tab", () -> CreativeModeTab.builder()
+            .title(Component.translatable("itemGroup.yourmod.example_tab"))
+            .icon(() -> ModItems.MY_ITEM.toStack())  // 标签页图标
+            .displayItems((parameters, output) -> {
+                output.accept(ModItems.MY_ITEM.get());
+                output.accept(ModItems.MY_SWORD.get());
+            })
+            .build());
+    
+    public static void register(IEventBus modEventBus) {
+        CREATIVE_MODE_TABS.register(modEventBus);
+    }
+}
+```
+
+* * *
+
+## 8\. 完整流程总结与方法论
+
+### 8.1 完整代码示例
+
+`ModItems.java`**（物品注册）：**
+
+```java
+package com.yourmod.item;
+
+import net.minecraft.world.item.Item;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.registries.DeferredItem;
+import net.neoforged.neoforge.registries.DeferredRegister;
+
+public class ModItems {
+    
+    // 1. 创建注册器（使用 Items 专用子类）
+    public static final DeferredRegister.Items ITEMS = 
+        DeferredRegister.createItems("yourmod");
+    
+    // 2. 注册简单物品
+    public static final DeferredItem<Item> MY_ITEM = 
+        ITEMS.registerSimpleItem("my_item", new Item.Properties().stacksTo(16));
+    
+    // 3. 注册自定义物品类
+    public static final DeferredItem<MySword> MY_SWORD = 
+        ITEMS.registerItem("my_sword", MySword::new, 
+            new Item.Properties().durability(250));
+    
+    // 4. 提供注册入口
+    public static void register(IEventBus modEventBus) {
+        ITEMS.register(modEventBus);
+    }
+}
+```
+
+`YourMod.java`**（主类）：**
+
+```java
+package com.yourmod;
+
+import com.yourmod.item.ModItems;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
+import net.minecraft.world.item.CreativeModeTabs;
+
+@Mod("yourmod")
+public class YourMod {
+    
+    public YourMod(IEventBus modEventBus) {
+        // 注册物品
+        ModItems.register(modEventBus);
+        
+        // 注册创造模式物品栏事件
+        modEventBus.addListener(this::addCreative);
+    }
+    
+    private void addCreative(BuildCreativeModeTabContentsEvent event) {
+        if (event.getTabKey() == CreativeModeTabs.INGREDIENTS) {
+            event.accept(ModItems.MY_ITEM);
+            event.accept(ModItems.MY_SWORD);
+        }
+    }
+}
+```
+
+**资源文件结构：**
+
+```
+src/main/resources/assets/yourmod/
+├── lang/
+│   ├── en_us.json    → {"item.yourmod.my_item": "My Item"}
+│   └── zh_cn.json    → {"item.yourmod.my_item": "我的物品"}
+├── models/item/
+│   ├── my_item.json  → {"parent": "minecraft:item/generated", "textures": {"layer0": "yourmod:item/my_item"}}
+│   └── my_sword.json → {"parent": "minecraft:item/handheld", "textures": {"layer0": "yourmod:item/my_sword"}}
+└── textures/item/
+    ├── my_item.png   → 16x16 PNG 贴图
+    └── my_sword.png  → 16x16 PNG 贴图
+```
+
+### 8.2 核心方法论总结
+
+#### 方法论一：从 Javadoc 开始
+
+每次遇到不认识的类，**第一步**是读它的 Javadoc 注释。NeoForge 的源码注释质量很高，通常会直接告诉你：
+
+-   这个类是做什么的
+    
+-   如何创建实例
+    
+-   完整的使用示例
+    
+
+#### 方法论二：找工厂方法，不要直接 new
+
+NeoForge 的大多数核心类都使用工厂方法模式。搜索 `public static` 开头的方法，这通常就是创建实例的正确方式。
+
+```java
+// 错误：直接 new
+DeferredRegister<Item> reg = new DeferredRegister<>(Registries.ITEM, "yourmod");
+
+// 正确：使用工厂方法
+DeferredRegister.Items reg = DeferredRegister.createItems("yourmod");
+```
+
+#### 方法论三：看继承关系理解能力
+
+```
+DeferredHolder<R, T>     ← 基础 Holder，实现 Holder<R> 和 Supplier<T>
+    └── DeferredItem<T>  ← 专门用于 Item，额外实现 ItemLike
+    └── DeferredBlock<T> ← 专门用于 Block
+```
+
+知道 `DeferredItem` 实现了 `ItemLike`，就知道可以直接把它传给需要 `ItemLike` 的方法（如 `event.accept()`）。
+
+#### 方法论四：顺着事件总线追踪注册流程
+
+```
+游戏启动
+  → 加载 @Mod 类，调用构造函数
+  → 构造函数中调用 ITEMS.register(modEventBus)
+  → DeferredRegister 监听 RegisterEvent
+  → RegisterEvent 触发时，遍历所有待注册条目
+  → 调用每个条目的工厂函数，创建实际对象
+  → 注册到 Minecraft 注册表
+```
+
+#### 方法论五：资源文件命名严格遵循约定
+
+| 类型 | 路径模板 |
+| --- | --- |
+| 贴图 | `assets/{modid}/textures/item/{item_id}.png` |
+| 模型 | `assets/{modid}/models/item/{item_id}.json` |
+| 翻译 | `assets/{modid}/lang/{locale}.json` |
+| 翻译键 | `item.{modid}.{item_id}` |
+
+**任何一个路径或命名错误，物品都会显示为紫黑方块或缺失贴图。**
+
+#### 方法论六：善用 IDE 的"跳转到定义"
+
+在 IntelliJ IDEA 或 VS Code 中：
+
+-   `Ctrl+点击` 类名/方法名 → 跳转到定义
+    
+-   `Ctrl+Q`（IDEA）→ 查看 Javadoc
+    
+-   `Ctrl+H`（IDEA）→ 查看类的继承层次
+    
+
+这些功能配合 NeoForge 源码，可以快速理解任何 API 的用法。
+
+### 8.3 常见错误与排查
+
+| 错误现象 | 可能原因 | 解决方法 |
+| --- | --- | --- |
+| 物品显示为紫黑方块 | 模型 JSON 文件缺失或路径错误 | 检查 `models/item/` 下的文件名 |
+| 物品显示为白色方块 | 贴图文件缺失或路径错误 | 检查 `textures/item/` 下的文件名 |
+| 物品名显示为 `item.yourmod.xxx` | 语言文件缺失或键名错误 | 检查 `lang/en_us.json` |
+| 游戏崩溃：`Duplicate registration` | 同一个 ID 注册了两次 | 检查是否有重复的注册代码 |
+| 游戏崩溃：`Cannot register after RegisterEvent` | 在错误时机调用了注册 | 确保注册代码在类静态初始化时执行 |
+| 物品不在创造模式物品栏 | 未监听 `BuildCreativeModeTabContentsEvent` | 添加事件监听器 |
+
+* * *
+
+## 附录：关键源码文件速查
+
+| 文件 | 作用 |
+| --- | --- |
+| `DeferredRegister.java` | 延迟注册系统核心，包含 `Items`、`Blocks` 内部类 |
+| `DeferredItem.java` | 物品的延迟持有者，实现 `ItemLike` |
+| `DeferredHolder.java` | 所有延迟持有者的基类 |
+| `RegisterEvent.java` | 注册时机事件，`DeferredRegister` 内部使用 |
+| `BuildCreativeModeTabContentsEvent.java` | 向创造模式物品栏添加物品 |
+| `ModelEvent.java` | 模型加载相关事件（高级用法） |

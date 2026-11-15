@@ -1,0 +1,664 @@
+---
+title: "NeoForge 库存与传输 开发教程"
+author: "阿呆皮革厂"
+license: "CC BY-NC-SA 4.0"
+---
+* * *
+
+## 目录
+
+1.  [先建立正确模型：库存不是 List，而是协议](#1-%E5%85%88%E5%BB%BA%E7%AB%8B%E6%AD%A3%E7%A1%AE%E6%A8%A1%E5%9E%8B%E5%BA%93%E5%AD%98%E4%B8%8D%E6%98%AF-list%E8%80%8C%E6%98%AF%E5%8D%8F%E8%AE%AE)
+    
+2.  [核心接口契约：IItemHandler 每个方法真正语义](#2-%E6%A0%B8%E5%BF%83%E6%8E%A5%E5%8F%A3%E5%A5%91%E7%BA%A6iitemhandler-%E6%AF%8F%E4%B8%AA%E6%96%B9%E6%B3%95%E7%9C%9F%E6%AD%A3%E8%AF%AD%E4%B9%89)
+    
+3.  [能力系统（Capability）深层原理与生命周期](#3-%E8%83%BD%E5%8A%9B%E7%B3%BB%E7%BB%9Fcapability%E6%B7%B1%E5%B1%82%E5%8E%9F%E7%90%86%E4%B8%8E%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F)
+    
+4.  [库存实现选型：ItemStackHandler vs ComponentItemHandler](#4-%E5%BA%93%E5%AD%98%E5%AE%9E%E7%8E%B0%E9%80%89%E5%9E%8Bitemstackhandler-vs-componentitemhandler)
+    
+5.  [Wrapper 组合学：不要重复造轮子](#5-wrapper-%E7%BB%84%E5%90%88%E5%AD%A6%E4%B8%8D%E8%A6%81%E9%87%8D%E5%A4%8D%E9%80%A0%E8%BD%AE%E5%AD%90)
+    
+6.  [Transfers 工程方法论：模拟、提交、回滚、节流](#6-transfers-%E5%B7%A5%E7%A8%8B%E6%96%B9%E6%B3%95%E8%AE%BA%E6%A8%A1%E6%8B%9F%E6%8F%90%E4%BA%A4%E5%9B%9E%E6%BB%9A%E8%8A%82%E6%B5%81)
+    
+7.  [完整实战模板 A：方块实体库存 + 自动化传输 + 菜单槽位](#7-%E5%AE%8C%E6%95%B4%E5%AE%9E%E6%88%98%E6%A8%A1%E6%9D%BF-a%E6%96%B9%E5%9D%97%E5%AE%9E%E4%BD%93%E5%BA%93%E5%AD%98--%E8%87%AA%E5%8A%A8%E5%8C%96%E4%BC%A0%E8%BE%93--%E8%8F%9C%E5%8D%95%E6%A7%BD%E4%BD%8D)
+    
+8.  [完整实战模板 B：容器物品（物品内库存）](#8-%E5%AE%8C%E6%95%B4%E5%AE%9E%E6%88%98%E6%A8%A1%E6%9D%BF-b%E5%AE%B9%E5%99%A8%E7%89%A9%E5%93%81%E7%89%A9%E5%93%81%E5%86%85%E5%BA%93%E5%AD%98)
+    
+9.  [什么时候该用 / 不该用 Inventories & Transfers](#9-%E4%BB%80%E4%B9%88%E6%97%B6%E5%80%99%E8%AF%A5%E7%94%A8--%E4%B8%8D%E8%AF%A5%E7%94%A8-inventories--transfers)
+    
+10.  [反模式与高频 Bug 清单（深入）](#10-%E5%8F%8D%E6%A8%A1%E5%BC%8F%E4%B8%8E%E9%AB%98%E9%A2%91-bug-%E6%B8%85%E5%8D%95%E6%B7%B1%E5%85%A5)
+     
+11.  [测试方法论：怎么验证你写的是“稳系统”](#11-%E6%B5%8B%E8%AF%95%E6%96%B9%E6%B3%95%E8%AE%BA%E6%80%8E%E4%B9%88%E9%AA%8C%E8%AF%81%E4%BD%A0%E5%86%99%E7%9A%84%E6%98%AF%E7%A8%B3%E7%B3%BB%E7%BB%9F)
+     
+12.  [最终方法论复盘（可长期复用）](#12-%E6%9C%80%E7%BB%88%E6%96%B9%E6%B3%95%E8%AE%BA%E5%A4%8D%E7%9B%98%E5%8F%AF%E9%95%BF%E6%9C%9F%E5%A4%8D%E7%94%A8)
+     
+
+* * *
+
+## 1\. 先建立正确模型：库存不是 List，而是协议
+
+新手最容易犯的错误：把库存当成“数组 + 增减数量”。
+
+在 NeoForge 里，库存系统的本质是：
+
+-   **对外协议**：`IItemHandler`
+    
+-   **暴露机制**：`Capabilities.ItemHandler`
+    
+-   **注册入口**：`RegisterCapabilitiesEvent`
+    
+-   **生命周期约束**：`Level.invalidateCapabilities(...)`
+    
+
+### 1.1 先问这 4 个问题（项目开工必答）
+
+1.  库存归属是谁？（方块实体 / 实体 / 物品）
+    
+2.  谁要访问？（玩家 GUI / 漏斗 / 管道 / 其他模组）
+    
+3.  是否按方向暴露不同槽位？
+    
+4.  什么时候能力引用会失效？
+    
+
+你只要先把这 4 个问题答清楚，后续架构基本不会跑偏。
+
+* * *
+
+## 2\. 核心接口契约：IItemHandler 每个方法真正语义
+
+核心定义在 `IItemHandler`。
+
+## 2.1 `getStackInSlot`：只读快照语义，不是写入口
+
+源码强警告见 `getStackInSlot``注释`。
+
+-   返回栈**不允许外部随意改**。
+    
+-   你若在外部 `grow/shrink` 直接改这个栈，可能破坏实现者内部状态一致性。
+    
+
+**方法论：**
+
+-   改库存只走 `insertItem`、`extractItem`、或极少数 `setStackInSlot`。
+    
+
+## 2.2 `insertItem` / `extractItem`：必须支持 simulate
+
+`insertItem(..., simulate)` 与 `extractItem(..., simulate)` 的 `simulate` 不是“可选参数”，是自动化系统安全运行的基础。
+
+-   `simulate=true`：仅计算，不改状态
+    
+-   `simulate=false`：真实提交
+    
+
+**方法论：两阶段提交（2PC）**
+
+1.  模拟提取
+    
+2.  模拟插入
+    
+3.  计算可转移量
+    
+4.  真提取
+    
+5.  真插入（必要时回滚）
+    
+
+## 2.3 `isItemValid`：不是“现在可插入”
+
+语义见 `isItemValid``注释`。
+
+-   `false`：永远不允许该物品进入此槽
+    
+-   `true`：只能说明“理论允许”，仍需模拟判断当下容量与状态
+    
+
+## 2.4 `IItemHandlerModifiable` 的边界
+
+`IItemHandlerModifiable` 注释明确它主要服务于框架 helper/slot。
+
+**工程建议：**
+
+-   业务逻辑优先走 insert/extract
+    
+-   菜单槽位同步、特殊恢复场景再用 setStackInSlot
+    
+
+* * *
+
+## 3\. 能力系统（Capability）深层原理与生命周期
+
+## 3.1 四类 ItemHandler Capability 的职责边界
+
+定义见 `Capabilities.ItemHandler`：
+
+-   `BLOCK`：世界中的容器（方块/方块实体）
+    
+-   `ENTITY`：实体完整库存视图
+    
+-   `ENTITY_AUTOMATION`：供自动化设备访问的实体库存
+    
+-   `ITEM`：物品自身内部库存
+    
+
+### 3.1.1 为什么 `ENTITY_AUTOMATION` 很重要
+
+看 `VanillaInventoryCodeHooks.getItemHandlerAt`：
+
+1.  先查 block capability（`BLOCK`）
+    
+2.  再查实体自动化 capability（`ENTITY_AUTOMATION`）
+    
+
+这让你能实现：
+
+-   玩家看到“完整实体库存”（`ENTITY`）
+    
+-   自动化只触达“允许子集”（`ENTITY_AUTOMATION`）
+    
+
+## 3.2 注册机制：统一进 RegisterCapabilitiesEvent
+
+注册接口见 `RegisterCapabilitiesEvent`：
+
+-   `registerBlock`
+    
+-   `registerBlockEntity`
+    
+-   `registerEntity`
+    
+-   `registerItem`
+    
+
+## 3.3 生命周期与失效通知：最容易被忽略的核心
+
+### 3.3.1 “能力会变”不是异常，是常态
+
+文档强调在能力可用性变化时必须失效，见 `IBlockCapabilityProvider`。
+
+需要手动失效的典型情况：
+
+-   方块状态变化导致侧面规则变化
+    
+-   方块实体配置变化（过滤器、模式切换）
+    
+-   你替换了内部 handler 视图
+    
+
+### 3.3.2 缓存监听模型
+
+`BlockCapabilityCache` 是“高频查询邻居能力”时的重要工具。
+
+关键细节：
+
+-   通过 `create(...)` 绑定监听
+    
+-   无效回调中**不允许立即查询**，见约束 `getCapability``防护`
+    
+-   每次失效后需再次调用 `getCapability()` 才会重建有效缓存
+    
+
+**方法论：**
+
+-   失效回调只打“dirty 标志”
+    
+-   在你自己的 tick 再重查能力
+    
+
+* * *
+
+## 4\. 库存实现选型：ItemStackHandler vs ComponentItemHandler
+
+## 4.1 `ItemStackHandler`：方块实体库存首选
+
+实现见 `ItemStackHandler`。
+
+你必须掌握 4 个扩展点：
+
+1.  槽位规则：`isItemValid`
+    
+2.  变化回调：`onContentsChanged`
+    
+3.  存档加载后钩子：`onLoad`
+    
+4.  NBT 持久化：`serializeNBT` / `deserializeNBT`
+    
+
+### 4.1.1 实战建议（深度）
+
+-   在 `onContentsChanged` 里至少做 `setChanged()`
+    
+-   若能力可见性受内部状态影响，顺带 `invalidateCapabilities`
+    
+-   配方缓存建议在 `onLoad` 或输入槽变化时失效，而非每 tick 全量重算
+    
+
+## 4.2 `ComponentItemHandler`：物品内库存（现代方案）
+
+定义见 `ComponentItemHandler`。
+
+核心特点：
+
+-   存储在 data component，而不是方块实体 NBT
+    
+-   每次写入是 copy-on-write 思维，见 `updateContents`
+    
+-   上限 256 槽，见 `Preconditions.checkArgument`
+    
+
+### 4.2.1 与 GUI 的冲突点
+
+类注释已提醒：不可变组件语义与 vanilla 槽位“原地改栈”习惯有冲突，见提示 `ItemHandlerCopySlot`。
+
+对应实现：
+
+-   `ItemHandlerCopySlot`
+    
+-   基础机制 `StackCopySlot`
+    
+
+* * *
+
+## 5\. Wrapper 组合学：不要重复造轮子
+
+NeoForge 的 wrappers 是“库存架构积木”。
+
+## 5.1 常用 wrapper 职责
+
+-   原版 `Container` 适配：`InvWrapper`
+    
+-   面向方向访问：`SidedInvWrapper`
+    
+-   多视图拼接：`CombinedInvWrapper`
+    
+-   视图裁切：`RangedWrapper`
+    
+-   动态代理：`ForwardingItemHandler`
+    
+
+## 5.2 重要细节：SidedInvWrapper 不是简单数组映射
+
+`SidedInvWrapper` 内部有对特殊容器规则补偿：
+
+-   酿造台瓶位限制，见 `slotLimit``特判`
+    
+-   熔炉燃料桶特判，见 `newStackInsertLimit``特判`
+    
+
+这说明一个方法论：
+
+> “方向库存”不仅是 slot 映射，还包括“每槽可插入上限与行为语义”。
+
+## 5.3 Forwarding 的工程价值
+
+`ForwardingItemHandler` 每次调用重取 delegate，避免缓存过期引用。
+
+NeoForge 在堆肥桶 provider 中就用了这一思想，见 `CapabilityHooks``注释与使用`。
+
+* * *
+
+## 6\. Transfers 工程方法论：模拟、提交、回滚、节流
+
+## 6.1 从官方整合逻辑学习
+
+`VanillaInventoryCodeHooks` 展示了标准传输范式：
+
+-   输入输出都先探测 capability
+    
+-   先模拟再执行
+    
+-   线性槽位扫描
+    
+-   对漏斗冷却保持兼容（见 `VanillaHopperItemHandler`）
+    
+
+## 6.2 五阶段传输模板（推荐统一）
+
+1.  **发现目标**：查邻居/实体 capability
+    
+2.  **理论过滤**：`isItemValid` 快速剪枝
+    
+3.  **模拟阶段**：`extract(sim=true)` + `insert(sim=true)`
+    
+4.  **提交阶段**：真实 extract + insert
+    
+5.  **异常兜底**：剩余回塞或安全落地
+    
+
+## 6.3 伪事务思想（非常关键）
+
+`IItemHandler` 不是数据库事务，但你可以构建**近似事务行为**：
+
+-   simulate 得到可移动上限
+    
+-   commit 只移动该上限
+    
+-   若后续插入失败，至少保底不丢物
+    
+
+## 6.4 节流与背压（性能方法论）
+
+大型机器网络里，最怕每 tick 全图扫描。
+
+建议：
+
+-   每 `N` tick 运行一次（如 4/8）
+    
+-   单次移动上限（如 8/16/64）
+    
+-   优先处理最近成功方向（局部性优化）
+    
+-   邻居 capability 用缓存 + invalidation
+    
+
+* * *
+
+## 7\. 完整实战模板 A：方块实体库存 + 自动化传输 + 菜单槽位
+
+下面给“可落地骨架”，你可直接改成自己的机器。
+
+### 7.1 BlockEntity 内部 handler 设计
+
+```java
+public class ExampleMachineBlockEntity extends BlockEntity {
+    // 0 输入, 1 燃料, 2 输出
+    private final ItemStackHandler items = new ItemStackHandler(3) {
+        @Override
+        public boolean isItemValid(int slot, ItemStack stack) {
+            return switch (slot) {
+                case 0 -> isInput(stack);
+                case 1 -> isFuel(stack);
+                case 2 -> false;
+                default -> false;
+            };
+        }
+
+        @Override
+        protected void onContentsChanged(int slot) {
+            setChanged();
+            if (level != null && !level.isClientSide) {
+                level.invalidateCapabilities(worldPosition);
+            }
+        }
+    };
+
+    public IItemHandler getAllView() { return items; }
+    public IItemHandler getInputView() { return new RangedWrapper(items, 0, 1); }
+    public IItemHandler getFuelView() { return new RangedWrapper(items, 1, 2); }
+    public IItemHandler getOutputView() { return new RangedWrapper(items, 2, 3); }
+}
+```
+
+### 7.2 Capability 注册（按方向暴露）
+
+```java
+@SubscribeEvent
+public static void onRegisterCaps(RegisterCapabilitiesEvent event) {
+    event.registerBlockEntity(
+        Capabilities.ItemHandler.BLOCK,
+        ModBlockEntities.EXAMPLE_MACHINE.get(),
+        (be, side) -> {
+            if (side == null) return be.getAllView();
+            return switch (side) {
+                case UP -> be.getInputView();
+                case DOWN -> be.getOutputView();
+                default -> be.getFuelView();
+            };
+        }
+    );
+}
+```
+
+### 7.3 服务端传输循环（2PC 实装）
+
+```java
+public static void serverTick(Level level, BlockPos pos, BlockState state, ExampleMachineBlockEntity be) {
+    if (level.getGameTime() % 8 != 0) return;
+
+    Direction out = state.getValue(FACING);
+    BlockPos targetPos = pos.relative(out);
+
+    IItemHandler target = level.getCapability(Capabilities.ItemHandler.BLOCK, targetPos, out.getOpposite());
+    if (target == null) return;
+
+    IItemHandler source = be.getOutputView();
+
+    ItemStack probe = source.extractItem(0, 16, true);
+    if (probe.isEmpty()) return;
+
+    ItemStack remSim = ItemHandlerHelper.insertItemStacked(target, probe, true);
+    int movable = probe.getCount() - remSim.getCount();
+    if (movable <= 0) return;
+
+    ItemStack extracted = source.extractItem(0, movable, false);
+    ItemStack rem = ItemHandlerHelper.insertItemStacked(target, extracted, false);
+
+    if (!rem.isEmpty()) {
+        ItemHandlerHelper.insertItemStacked(source, rem, false);
+    }
+}
+```
+
+### 7.4 菜单槽位
+
+-   普通 handler：`SlotItemHandler`
+    
+-   组件型不可变 handler：`ItemHandlerCopySlot`
+    
+
+`SlotItemHandler` 注释已经提醒：如果你的 handler 不实现 modifiable，要重写 `set/initialize`，见 `SlotItemHandler#set`。
+
+* * *
+
+## 8\. 完整实战模板 B：容器物品（物品内库存）
+
+## 8.1 典型场景
+
+-   背包物品
+    
+-   胶囊/盒子
+    
+-   模块化装备内部槽
+    
+
+## 8.2 核心技术路线
+
+1.  准备 `DataComponentType<ItemContainerContents>`
+    
+2.  通过 `RegisterCapabilitiesEvent.registerItem` 暴露 `Capabilities.ItemHandler.ITEM`
+    
+3.  handler 用 `ComponentItemHandler`
+    
+4.  菜单槽位用 `ItemHandlerCopySlot`
+    
+
+## 8.3 关键方法论
+
+-   容器物品不是“迷你方块实体”；它受 ItemStack 生命周期影响更大
+    
+-   别缓存 `ComponentItemHandler` 太久；它每次写可能更新组件快照
+    
+-   UI 层必须接受 copy-slot 语义
+    
+
+* * *
+
+## 9\. 什么时候该用 / 不该用 Inventories & Transfers
+
+## 9.1 适用（建议用）
+
+-   你要和漏斗/管道/外部机器互操作
+    
+-   你要表达槽位规则、方向规则、堆叠规则
+    
+-   你要长期持久化“物品集合状态”
+    
+
+## 9.2 不适用（换模型）
+
+-   纯流体：应走 `FluidHandler`
+    
+-   纯能量：应走 `EnergyStorage`
+    
+-   临时 UI 选择状态：用菜单数据/临时对象
+    
+-   一次性交换：可直接逻辑处理，不必引入完整库存协议
+    
+
+## 9.3 决策树（快速版）
+
+-   需要对外标准化访问？
+    
+    -   是：用 ItemHandler capability
+        
+    -   否：本地结构即可
+        
+-   需要按方向暴露子集？
+    
+    -   是：Sided / Ranged / Combined
+        
+-   需要物品内部存储？
+    
+    -   是：ComponentItemHandler 路线
+        
+
+* * *
+
+## 10\. 反模式与高频 Bug 清单（深入）
+
+## 10.1 反模式 A：直接改 `getStackInSlot` 返回栈
+
+后果：状态不一致、同步异常、幽灵物品。
+
+## 10.2 反模式 B：客户端也执行转移
+
+后果：双执行、闪烁、回滚感。
+
+## 10.3 反模式 C：只做 execute，不做 simulate
+
+后果：丢物/重复转移概率显著上升。
+
+## 10.4 反模式 D：能力变化后不失效
+
+后果：`BlockCapabilityCache` 继续持有旧视图，行为“看似随机”。
+
+## 10.5 反模式 E：把 GUI 逻辑写进库存核心
+
+后果：复用性差、自动化行为与 GUI 强耦合。
+
+* * *
+
+## 11\. 测试方法论：怎么验证你写的是“稳系统”
+
+## 11.1 契约测试（必须）
+
+对每个槽位、每类物品做：
+
+-   `isItemValid` 断言
+    
+-   `insert(sim=true)` 不改状态断言
+    
+-   `insert(sim=false)` 状态变化断言
+    
+-   `extract(sim=true)` 不改状态断言
+    
+-   `extract(sim=false)` 状态变化断言
+    
+
+## 11.2 一致性测试（推荐）
+
+-   连续 1000 tick 自动化搬运
+    
+-   多方向同时输入输出
+    
+-   邻居容器频繁替换
+    
+-   区块卸载/加载后继续测试
+    
+
+观察指标：
+
+-   不丢物
+    
+-   不重复生成
+    
+-   不死循环卡 tick
+    
+-   能力失效恢复正常
+    
+
+## 11.3 兼容测试（跨模组）
+
+-   对接至少 1 种漏斗类、1 种管道类、1 种机器类
+    
+-   验证 `side=null` 与具体 `side` 行为符合预期
+    
+
+* * *
+
+## 12\. 最终方法论复盘（可长期复用）
+
+把 Inventories & Transfers 写“深”写“稳”，不靠记 API，靠这 8 条：
+
+1.  **先抽象后编码**：归属、访问者、生命周期先定
+    
+2.  **协议优先**：所有外部交互服从 `IItemHandler` 契约
+    
+3.  **组合优先**：优先 wrapper，减少自研复杂度
+    
+4.  **模拟优先**：任何搬运先 simulate
+    
+5.  **一致性优先**：提交失败有兜底
+    
+6.  **生命周期优先**：能力变化必失效通知
+    
+7.  **分层优先**：库存规则与 GUI 表现分离
+    
+8.  **验证优先**：用压力与边界测试证明稳定性
+    
+
+只要你长期坚持这 8 条，你的库存系统就能从“能跑”进化到“可扩展、可兼容、可维护”。
+
+* * *
+
+## 附录：建议反复阅读的源码锚点
+
+-   `IItemHandler`
+    
+-   `IItemHandlerModifiable`
+    
+-   `ItemStackHandler`
+    
+-   `ComponentItemHandler`
+    
+-   `ItemHandlerHelper`
+    
+-   `Capabilities.ItemHandler`
+    
+-   `RegisterCapabilitiesEvent`
+    
+-   `IBlockCapabilityProvider`
+    
+-   `BlockCapabilityCache`
+    
+-   `CapabilityHooks`
+    
+-   `VanillaInventoryCodeHooks`
+    
+-   `VanillaHopperItemHandler`
+    
+-   `SlotItemHandler`
+    
+-   `ItemHandlerCopySlot`
+    
+-   `StackCopySlot`
+    
+-   `InvWrapper`
+    
+-   `SidedInvWrapper`
+    
+-   `CombinedInvWrapper`
+    
+-   `RangedWrapper`
+    
+-   `ForwardingItemHandler`

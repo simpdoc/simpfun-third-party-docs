@@ -1,0 +1,301 @@
+---
+title: "从0开始的我的世界Java版开服教程-前言"
+author: "阿呆皮革厂"
+license: "CC BY-NC-SA 4.0"
+---
+本期文档主要是为了向从未接触过MC的玩家简单介绍我的世界Java版并解决一些常见问题。
+
+**开始前的准备：电脑，手，脑子**
+
+## 您需要知悉的部分简幻欢规定\[1\]
+
+**2.1.2 注册时，您须对注册信息的真实性、合法性、有效性承担全部责任**，并配合简幻欢依法核验您的注册信息，**且每个自然人仅允许拥有一个账号，不允许利用漏洞获取额外的权益，如开小号获得双份免费资源等。**如您将简幻欢账号**借用，租赁，售卖，代注册**给非您本人，或通过非本人认证的方式等绕过简幻欢认证机制，将视为违反账号使用公约，简幻欢有权对您的账号进行封禁处理。
+
+**2.1.3 如您账号存在以下情况，简幻欢不承担相关责任：**（5）因尝试开小号触发反恶意获取额外资源机制，或主动注销并重新注册，或主动开启pro，导致失去公益权益的（其中公益权益为手动签到，使用免费资源等）。
+
+**2.2.4 如发现以下行为，简幻欢将有权对账号进行封禁处理，并拒绝退还所有费用，其中包括但不限于：**（5,8）将简幻欢所提供的服务资源用作网站搭建，内网穿透等非简幻欢允许的服务的；将简幻欢服务资源用于盈利，或开展商业性质服务的。
+
+**2.4.2** 您同意，由于您自身违法违规、违反本协议或您侵害他人任何权利而衍生或导致任何第三方向简幻欢或其关联公司提出任何索赔或请求，或简幻欢和其关联公司因此而发生任何损失，您同意将足额进行赔偿。**根据简幻欢请求，您须为简幻欢抗辩并使简幻欢免于上述赔偿，在此过程中简幻欢应及时向您提供第三方的书面通知，并为您和解或抗辩提供可获得的必要合理信息和协助。**
+
+## 基础术语的介绍
+
+### 环境变量
+
+_设置环境变量，能让设备更好的运行进程，简化操作流程_
+
+#### 这里以jdk17为例，设置JAVA\_HOME变量、Path变量
+
+1.  右键桌面上的计算机图标，名称为"此电脑"/"我的电脑"
+    
+2.  此时会有一个"属性"选项，点击打开
+    
+3.  寻找"高级系统设置"，点击打开
+    
+4.  点击"环境变量"。此时不要动上方的用户变量，我们只操作系统变量
+    
+5.  找到系统变量中的Path，单击选中，点击编辑打开操作页面
+    
+6.  把%JAVA\_HOME%bin;填入
+    
+7.  新建一个系统变量JAVA\_HOME，路径选择你安装的jdk17的目录
+    
+
+至此便完成了环境变量的配置。
+
+当您需要在powershell中(通常是开发环境)临时指定java版本时，可以这样做：
+
+`$env:JAVA_HOME = "路径"`
+
+`$env:Path = "$env:JAVA_HOME\bin;" + $env:Path`
+
+`主命令`
+
+### 客户端/服务端
+
+客户端：客户端是完成实体和材质渲染和光线计算等的程序
+
+服务端：服务端是负责管理多人游戏中的玩家交互、逻辑运算、数据同步和游戏世界维护的程序，既可以是独立服务器，也可以是内穿的主机端
+
+### 模组加载器
+
+_模组加载器指的是：在客户端和/或服务端加载模组的工具_
+
+#### 常见的模组加载器如下所示：
+
+Forge：一个老牌的模组加载器，优点是在老版本稳定，缺点是高版本性能不佳
+
+Fabric：一个轻量的模组加载器，稳定性依赖于模组作者，**别忘了安装Fabric-api**
+
+NeoForge：孵化于Forge的~狐狸~加载器，据说未来会有很大的性能更新
+
+LiteLoader：老版本的模组加载器，1.13+退出了历史舞台
+
+**部分模组需要同时在服务端和客户端添加，NeoForge端无法进入原版服务端**
+
+### 光影加载器
+
+_光影加载器指的是：在客户端加载光影，从而模拟自然光线的折射、散射等现象，使游戏中的场景、材质（如水体、树叶）呈现更细腻的视觉效果的工具_
+
+#### 常见的光影加载器如下所示：
+
+OptiFine：高清修复，老牌光影加载器； **~高版本的低清破坏~** **(****不要再往服务端扔高清修复了！！！！！！****)**
+
+Iris Shader：Iris光影加载器，工作于Quilt(实在太少见了)/Fabric/NeoForge
+
+Oculus：主要支持高版本Forge的光影加载器，兼容性良好
+
+OptiFabric：Fabric端使用的高清修复
+
+### 报错
+
+_报错指的是：程序运行过程中由于软硬件错误产生的异常输出，是我的世界开服和游玩遇到困难最直接也最详细的信息获取途径_
+
+#### 服务端常见报错
+
+-   看门狗(Watchdog)报错，我的世界服务端的主线程挂起检测机制，通常由于生电漏斗过多、实体过多、模组加载顺序和加载内容异常、数据库挂起，区块卡死等引起，应当优先排查是否是掉落物过多引起（解决方案`kill @e[type=item`\]）
+    
+-   客户端类报错，将本该加载于客户端的模组加载于服务端造成的报错。典型报错为 `Attempted to load class net/minecraft/client/MouseHandler for invalid dist DEDICATED_SERVER` 、`Attempted to load class net/minecraft/client/gui/screens/Screen for invalid dist DEDICATED_SERVER` 等
+    
+
+服务端断电或强制关机造成的区块损坏：
+
+```arduino
+[main/ERROR]: Exception reading .\world\level.dat
+
+java.io.EOFException: Unexpected end of ZLIB input stream
+
+	at java.util.zip.InflaterInputStream.fill(InflaterInputStream.java:266) ~[?:?]
+
+	at java.util.zip.InflaterInputStream.read(InflaterInputStream.java:175) ~[?:?]
+
+	at java.util.zip.GZIPInputStream.read(GZIPInputStream.java:128) ~[?:?]
+
+	at net.minecraft.util.FixedBufferInputStream.fill(FixedBufferInputStream.java:94) ~[server-intermediary.jar:?]
+
+	at net.minecraft.util.FixedBufferInputStream.read(FixedBufferInputStream.java:47) ~[server-intermediary.jar:?]
+
+	at java.io.DataInputStream.readFully(DataInputStream.java:208) ~[?:?]
+
+	at java.io.DataInputStream.readUTF(DataInputStream.java:594) ~[?:?]
+
+	at java.io.DataInputStream.readUTF(DataInputStream.java:550) ~[?:?]
+
+	at net.minecraft.nbt.NbtCompound$1.doAccept(class_2487.java:100) ~[server-intermediary.jar:?]
+
+	at net.minecraft.nbt.NbtCompound$1.doAccept(class_2487.java:113) ~[server-intermediary.jar:?]
+
+	at net.minecraft.nbt.NbtList$1.doAccept(class_2499.java:74) ~[server-intermediary.jar:?]
+
+	at net.minecraft.nbt.NbtCompound$1.doAccept(class_2487.java:113) ~[server-intermediary.jar:?]
+
+	at net.minecraft.nbt.NbtCompound$1.doAccept(class_2487.java:113) ~[server-intermediary.jar:?]
+
+	at net.minecraft.nbt.NbtIo.scan(NbtIo.java:120) ~[server-intermediary.jar:?]
+
+	at net.minecraft.nbt.NbtIo.scanCompressed(NbtIo.java:48) ~[server-intermediary.jar:?]
+
+	at net.minecraft.nbt.NbtIo.scanCompressed(NbtIo.java:42) ~[server-intermediary.jar:?]
+
+	at net.minecraft.world.level.storage.LevelStorage.loadCompactLevelData(LevelStorage.java:340) ~[server-intermediary.jar:?]
+
+	at net.minecraft.world.level.storage.LevelStorage.method_29015(LevelStorage.java:297) ~[server-intermediary.jar:?]
+
+	at net.minecraft.world.level.storage.LevelStorage.readLevelProperties(LevelStorage.java:234) ~[server-intermediary.jar:?]
+
+	at net.minecraft.world.level.storage.LevelStorage$Session.getLevelSummary(class_32.java:427) ~[server-intermediary.jar:?]
+
+	at net.minecraft.server.Main.main(Main.java:138) ~[server-intermediary.jar:?]
+
+	at net.fabricmc.loader.impl.game.minecraft.MinecraftGameProvider.launch(MinecraftGameProvider.java:480) ~[fabric-loader-0.16.14.jar:?]
+
+	at net.fabricmc.loader.impl.launch.knot.Knot.launch(Knot.java:74) ~[fabric-loader-0.16.14.jar:?]
+
+	at net.fabricmc.loader.impl.launch.knot.KnotServer.main(KnotServer.java:23) ~[fabric-loader-0.16.14.jar:?]
+
+	at net.fabricmc.loader.impl.launch.server.FabricServerLauncher.main(FabricServerLauncher.java:69) ~[fabric-loader-0.16.14.jar:?]
+
+	at net.fabricmc.installer.ServerLauncher.main(ServerLauncher.java:69) ~[fabric-server-launch.jar:1.0.3]
+
+[22:14:59] [main/ERROR]: Exception reading .\world\level.dat
+
+java.io.EOFException: Unexpected end of ZLIB input stream
+
+	at java.util.zip.InflaterInputStream.fill(InflaterInputStream.java:266) ~[?:?]
+
+	at java.util.zip.InflaterInputStream.read(InflaterInputStream.java:175) ~[?:?]
+
+	at java.util.zip.GZIPInputStream.read(GZIPInputStream.java:128) ~[?:?]
+
+	at net.minecraft.util.FixedBufferInputStream.fill(FixedBufferInputStream.java:94) ~[server-intermediary.jar:?]
+
+	at net.minecraft.util.FixedBufferInputStream.read(FixedBufferInputStream.java:47) ~[server-intermediary.jar:?]
+
+	at java.io.DataInputStream.readFully(DataInputStream.java:208) ~[?:?]
+
+	at java.io.DataInputStream.readUTF(DataInputStream.java:594) ~[?:?]
+
+	at java.io.DataInputStream.readUTF(DataInputStream.java:550) ~[?:?]
+
+	at net.minecraft.nbt.NbtCompound$1.doAccept(class_2487.java:100) ~[server-intermediary.jar:?]
+
+	at net.minecraft.nbt.NbtCompound$1.doAccept(class_2487.java:113) ~[server-intermediary.jar:?]
+
+	at net.minecraft.nbt.NbtList$1.doAccept(class_2499.java:74) ~[server-intermediary.jar:?]
+
+	at net.minecraft.nbt.NbtCompound$1.doAccept(class_2487.java:113) ~[server-intermediary.jar:?]
+
+	at net.minecraft.nbt.NbtCompound$1.doAccept(class_2487.java:113) ~[server-intermediary.jar:?]
+
+	at net.minecraft.nbt.NbtIo.scan(NbtIo.java:120) ~[server-intermediary.jar:?]
+
+	at net.minecraft.nbt.NbtIo.scanCompressed(NbtIo.java:48) ~[server-intermediary.jar:?]
+
+	at net.minecraft.nbt.NbtIo.scanCompressed(NbtIo.java:42) ~[server-intermediary.jar:?]
+
+	at net.minecraft.world.level.storage.LevelStorage.loadCompactLevelData(LevelStorage.java:340) ~[server-intermediary.jar:?]
+
+	at net.minecraft.world.level.storage.LevelStorage.readDataPackSettings(LevelStorage.java:250) ~[server-intermediary.jar:?]
+
+	at net.minecraft.world.level.storage.LevelStorage.readLevelProperties(LevelStorage.java:234) ~[server-intermediary.jar:?]
+
+	at net.minecraft.world.level.storage.LevelStorage$Session.getDataPackSettings(class_32.java:439) ~[server-intermediary.jar:?]
+
+	at net.minecraft.server.Main.createServerConfig(Main.java:262) ~[server-intermediary.jar:?]
+
+	at net.minecraft.server.Main.main(Main.java:159) ~[server-intermediary.jar:?]
+
+	at net.fabricmc.loader.impl.game.minecraft.MinecraftGameProvider.launch(MinecraftGameProvider.java:480) ~[fabric-loader-0.16.14.jar:?]
+
+	at net.fabricmc.loader.impl.launch.knot.Knot.launch(Knot.java:74) ~[fabric-loader-0.16.14.jar:?]
+
+	at net.fabricmc.loader.impl.launch.knot.KnotServer.main(KnotServer.java:23) ~[fabric-loader-0.16.14.jar:?]
+
+	at net.fabricmc.loader.impl.launch.server.FabricServerLauncher.main(FabricServerLauncher.java:69) ~[fabric-loader-0.16.14.jar:?]
+
+	at net.fabricmc.installer.ServerLauncher.main(ServerLauncher.java:69) ~[fabric-server-launch.jar:1.0.3]
+```
+
+-   混合端导致的不兼容报错：[https://mclo.gs/QhEHQEm](https://mclo.gs/QhEHQEm) （备用地址[https://xianaldai.lanzoub.com/iXw8834gzzod](https://xianaldai.lanzoub.com/iXw8834gzzod)） 此处仅供参考，不同的混合端问题可能报错形式不一，此处为反映射表崩了
+    
+
+#### 客户端常见报错
+
+-   使用了过高版本的java：
+    
+
+```arduino
+Exception in thread "main" java.lang.reflect.InvocationTargetException
+
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:109)
+
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+
+	at oolloo.jlw.Wrapper.invokeMain(Wrapper.java:112)
+
+	at oolloo.jlw.Wrapper.main(Wrapper.java:105)
+
+Caused by: java.lang.ClassCastException: class jdk.internal.loader.ClassLoaders$AppClassLoader cannot be cast to class java.net.URLClassLoader (jdk.internal.loader.ClassLoaders$AppClassLoader and java.net.URLClassLoader are in module java.base of loader 'bootstrap')
+
+	at net.minecraft.launchwrapper.Launch.<init>(Launch.java:34)
+
+	at net.minecraft.launchwrapper.Launch.main(Launch.java:28)
+
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+
+	... 3 more
+```
+
+使用了过低版本的java：
+
+```arduino
+[15:59:02] [main/INFO]: Loading Minecraft 1.21.8 with Fabric Loader 0.17.0
+
+[15:59:03] [main/WARN]: Mod resolution failed
+
+[15:59:03] [main/INFO]: Immediate reason: [HARD_DEP_INCOMPATIBLE_PRESELECTED fabric-api 0.130.0+1.21.8 {depends java @ [>=21]}, ROOT_FORCELOAD_SINGLE fabric-api 0.130.0+1.21.8]
+
+[15:59:03] [main/INFO]: Reason: [HARD_DEP fabric-api 0.130.0+1.21.8 {depends java @ [>=21]}]
+
+[15:59:03] [main/INFO]: Fix: add [], remove [], replace [[java 8] -> add:java 21 ([[21,∞)])]
+
+[15:59:03] [main/ERROR]: Incompatible mods found!
+
+net.fabricmc.loader.impl.FormattedException: Some of your mods are incompatible with the game or each other!
+
+确定了一种可能的解决方法，这样做可能会解决你的问题：
+
+	 - 将 'OpenJDK 64-Bit Server VM' (java) 8 替换为 21 及以上版本。
+
+更多信息：
+
+	 - 模组 'Fabric API' (fabric-api) 0.130.0+1.21.8 需要 'OpenJDK 64-Bit Server VM' (java) 的 21 及以上版本，但已经安装了的版本 8 不对！
+
+	at net.fabricmc.loader.impl.FormattedException.ofLocalized(FormattedException.java:51) ~[fabric-loader-0.17.0.jar:?]
+
+	at net.fabricmc.loader.impl.FabricLoaderImpl.load(FabricLoaderImpl.java:202) ~[fabric-loader-0.17.0.jar:?]
+
+	at net.fabricmc.loader.impl.launch.knot.Knot.init(Knot.java:142) ~[fabric-loader-0.17.0.jar:?]
+
+	at net.fabricmc.loader.impl.launch.knot.Knot.launch(Knot.java:66) [fabric-loader-0.17.0.jar:?]
+
+	at net.fabricmc.loader.impl.launch.knot.KnotClient.main(KnotClient.java:23) [fabric-loader-0.17.0.jar:?]
+
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method) ~[?:1.8.0_452]
+
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62) ~[?:1.8.0_452]
+
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43) ~[?:1.8.0_452]
+
+	at java.lang.reflect.Method.invoke(Method.java:498) ~[?:1.8.0_452]
+
+	at oolloo.jlw.Wrapper.invokeMain(Wrapper.java:112) [JavaWrapper.jar:?]
+
+	at oolloo.jlw.Wrapper.main(Wrapper.java:105) [JavaWrapper.jar:?]
+```
+
+-   客户端报错在使用第三方启动器时会自动给出分析建议，如果仍需技术支持应该将日志上传至mclo.gs 。
+    
+
+参考资料：
+
+\[1\]《简幻欢服务协议》，沈阳简幻网络科技有限公司，2025年3月21日

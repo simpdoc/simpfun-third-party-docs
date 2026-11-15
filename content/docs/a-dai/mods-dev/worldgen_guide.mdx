@@ -1,0 +1,1599 @@
+---
+title: "NeoForge 世界生成开发指南"
+author: "阿呆皮革厂"
+license: "CC BY-NC-SA 4.0"
+---
+> 方法论：
+> 
+> -   你知道世界生成系统在底层如何串起来
+>     
+> -   你知道每一层应该改哪里、为什么这么改
+>     
+> -   你能读懂源码、定位问题、构建可扩展方案
+>     
+> 
+> 本文全部分析基于 `neoforge源码` ，不依赖你将开发的模组源码。
+
+* * *
+
+## 目录
+
+1.  [先建立正确模型：世界生成不是一个系统，而是一串流水线](#1-%E5%85%88%E5%BB%BA%E7%AB%8B%E6%AD%A3%E7%A1%AE%E6%A8%A1%E5%9E%8B%E4%B8%96%E7%95%8C%E7%94%9F%E6%88%90%E4%B8%8D%E6%98%AF%E4%B8%80%E4%B8%AA%E7%B3%BB%E7%BB%9F%E8%80%8C%E6%98%AF%E4%B8%80%E4%B8%B2%E6%B5%81%E6%B0%B4%E7%BA%BF)
+    
+2.  [先读源码再写代码：最关键入口总览（建议收藏）](#2-%E5%85%88%E8%AF%BB%E6%BA%90%E7%A0%81%E5%86%8D%E5%86%99%E4%BB%A3%E7%A0%81%E6%9C%80%E5%85%B3%E9%94%AE%E5%85%A5%E5%8F%A3%E6%80%BB%E8%A7%88%E5%BB%BA%E8%AE%AE%E6%94%B6%E8%97%8F)
+    
+3.  [底层原理一：注册表 + Codec + 数据加载，是世界生成的一切前提](#3-%E5%BA%95%E5%B1%82%E5%8E%9F%E7%90%86%E4%B8%80%E6%B3%A8%E5%86%8C%E8%A1%A8--codec--%E6%95%B0%E6%8D%AE%E5%8A%A0%E8%BD%BD%E6%98%AF%E4%B8%96%E7%95%8C%E7%94%9F%E6%88%90%E7%9A%84%E4%B8%80%E5%88%87%E5%89%8D%E6%8F%90)
+    
+4.  [底层原理二：区块状态机（ChunkStatus）决定生成顺序](#4-%E5%BA%95%E5%B1%82%E5%8E%9F%E7%90%86%E4%BA%8C%E5%8C%BA%E5%9D%97%E7%8A%B6%E6%80%81%E6%9C%BAchunkstatus%E5%86%B3%E5%AE%9A%E7%94%9F%E6%88%90%E9%A1%BA%E5%BA%8F)
+    
+5.  [底层原理三：BiomeModifier 如何“改原版世界”](#5-%E5%BA%95%E5%B1%82%E5%8E%9F%E7%90%86%E4%B8%89biomemodifier-%E5%A6%82%E4%BD%95%E6%94%B9%E5%8E%9F%E7%89%88%E4%B8%96%E7%95%8C)
+    
+6.  [底层原理四：Feature 放置链（Feature -> Configured -> Placed）](#6-%E5%BA%95%E5%B1%82%E5%8E%9F%E7%90%86%E5%9B%9Bfeature-%E6%94%BE%E7%BD%AE%E9%93%BEfeature---configured---placed)
+    
+7.  [底层原理五：噪声地形与生物群系分配（NoiseRouter + Climate）](#7-%E5%BA%95%E5%B1%82%E5%8E%9F%E7%90%86%E4%BA%94%E5%99%AA%E5%A3%B0%E5%9C%B0%E5%BD%A2%E4%B8%8E%E7%94%9F%E7%89%A9%E7%BE%A4%E7%B3%BB%E5%88%86%E9%85%8Dnoiserouter--climate)
+    
+8.  [底层原理六：维度系统（DimensionType + LevelStem + WorldPreset）](#8-%E5%BA%95%E5%B1%82%E5%8E%9F%E7%90%86%E5%85%AD%E7%BB%B4%E5%BA%A6%E7%B3%BB%E7%BB%9Fdimensiontype--levelstem--worldpreset)
+    
+9.  [方法论：四层递进开发法（L1→L4）](#9-%E6%96%B9%E6%B3%95%E8%AE%BA%E5%9B%9B%E5%B1%82%E9%80%92%E8%BF%9B%E5%BC%80%E5%8F%91%E6%B3%95l1l4)
+    
+10.  [实战 L1：修改原版世界生成（最低风险，最高性价比）](#10-%E5%AE%9E%E6%88%98-l1%E4%BF%AE%E6%94%B9%E5%8E%9F%E7%89%88%E4%B8%96%E7%95%8C%E7%94%9F%E6%88%90%E6%9C%80%E4%BD%8E%E9%A3%8E%E9%99%A9%E6%9C%80%E9%AB%98%E6%80%A7%E4%BB%B7%E6%AF%94)
+     
+11.  [实战 L2：自定义地物（矿脉/树/植被）并注入指定 biome](#11-%E5%AE%9E%E6%88%98-l2%E8%87%AA%E5%AE%9A%E4%B9%89%E5%9C%B0%E7%89%A9%E7%9F%BF%E8%84%89%E6%A0%91%E6%A4%8D%E8%A2%AB%E5%B9%B6%E6%B3%A8%E5%85%A5%E6%8C%87%E5%AE%9A-biome)
+     
+12.  [实战 L3：从 0 自定义新生物群系（Biome）并参与分布](#12-%E5%AE%9E%E6%88%98-l3%E4%BB%8E-0-%E8%87%AA%E5%AE%9A%E4%B9%89%E6%96%B0%E7%94%9F%E7%89%A9%E7%BE%A4%E7%B3%BBbiome%E5%B9%B6%E5%8F%82%E4%B8%8E%E5%88%86%E5%B8%83)
+     
+13.  [实战 L4：完全自定义新维度 + 维度 biome 分布 + 预设](#13-%E5%AE%9E%E6%88%98-l4%E5%AE%8C%E5%85%A8%E8%87%AA%E5%AE%9A%E4%B9%89%E6%96%B0%E7%BB%B4%E5%BA%A6--%E7%BB%B4%E5%BA%A6-biome-%E5%88%86%E5%B8%83--%E9%A2%84%E8%AE%BE)
+     
+14.  [进阶：自定义 BiomeModifier 类型（Java 侧扩展）](#14-%E8%BF%9B%E9%98%B6%E8%87%AA%E5%AE%9A%E4%B9%89-biomemodifier-%E7%B1%BB%E5%9E%8Bjava-%E4%BE%A7%E6%89%A9%E5%B1%95)
+     
+15.  [进阶：地表规则（SurfaceRules）与噪声参数定制思路](#15-%E8%BF%9B%E9%98%B6%E5%9C%B0%E8%A1%A8%E8%A7%84%E5%88%99surfacerules%E4%B8%8E%E5%99%AA%E5%A3%B0%E5%8F%82%E6%95%B0%E5%AE%9A%E5%88%B6%E6%80%9D%E8%B7%AF)
+     
+16.  [工程化方法：如何组织 worldgen 资源与版本升级策略](#16-%E5%B7%A5%E7%A8%8B%E5%8C%96%E6%96%B9%E6%B3%95%E5%A6%82%E4%BD%95%E7%BB%84%E7%BB%87-worldgen-%E8%B5%84%E6%BA%90%E4%B8%8E%E7%89%88%E6%9C%AC%E5%8D%87%E7%BA%A7%E7%AD%96%E7%95%A5)
+     
+17.  [排错大全：从日志到根因定位（按错误类型索引）](#17-%E6%8E%92%E9%94%99%E5%A4%A7%E5%85%A8%E4%BB%8E%E6%97%A5%E5%BF%97%E5%88%B0%E6%A0%B9%E5%9B%A0%E5%AE%9A%E4%BD%8D%E6%8C%89%E9%94%99%E8%AF%AF%E7%B1%BB%E5%9E%8B%E7%B4%A2%E5%BC%95)
+     
+18.  [性能与稳定性：世界生成不是越复杂越好](#18-%E6%80%A7%E8%83%BD%E4%B8%8E%E7%A8%B3%E5%AE%9A%E6%80%A7%E4%B8%96%E7%95%8C%E7%94%9F%E6%88%90%E4%B8%8D%E6%98%AF%E8%B6%8A%E5%A4%8D%E6%9D%82%E8%B6%8A%E5%A5%BD)
+     
+19.  [最终落地清单：发布前必须自查的 60 条检查项](#19-%E6%9C%80%E7%BB%88%E8%90%BD%E5%9C%B0%E6%B8%85%E5%8D%95%E5%8F%91%E5%B8%83%E5%89%8D%E5%BF%85%E9%A1%BB%E8%87%AA%E6%9F%A5%E7%9A%84-60-%E6%9D%A1%E6%A3%80%E6%9F%A5%E9%A1%B9)
+     
+20.  [总结：你应该真正带走的能力](#20-%E6%80%BB%E7%BB%93%E4%BD%A0%E5%BA%94%E8%AF%A5%E7%9C%9F%E6%AD%A3%E5%B8%A6%E8%B5%B0%E7%9A%84%E8%83%BD%E5%8A%9B)
+     
+
+* * *
+
+## 1\. 先建立正确模型：世界生成不是一个系统，而是一串流水线
+
+新手常见误区：
+
+-   以为“世界生成 = 加矿脉”
+    
+-   以为“生物群系 = 颜色 + 温度”
+    
+-   以为“维度 = 传送门 + 世界 key”
+    
+
+实际上它是分层流水线：
+
+1.  **维度元信息层**（时间、坐标缩放、高度范围、视觉效果）
+    
+2.  **区块生成器层**（地形体素填充：空气/石头/流体）
+    
+3.  **生物群系来源层**（这个位置应该是哪个 biome）
+    
+4.  **雕刻器层（carvers）**（洞穴/峡谷）
+    
+5.  **特征放置层（features）**（矿、树、花、湖泊）
+    
+6.  **刷怪配置层（spawn settings）**
+    
+7.  **后处理修改层（BiomeModifier/StructureModifier）**
+    
+
+源码对应点：
+
+-   维度类型定义：`DimensionType`
+    
+-   维度实例定义（类型 + 生成器）：`LevelStem`
+    
+-   生成器抽象：`ChunkGenerator`
+    
+-   噪声生成器实现：`NoiseBasedChunkGenerator`
+    
+-   biome 抽象与数据：`Biome`
+    
+-   feature 数据结构：`ConfiguredFeature`、`PlacedFeature`
+    
+-   NeoForge 修改入口：`BiomeModifier`
+    
+
+* * *
+
+## 2\. 先读源码再写代码：最关键入口总览（建议收藏）
+
+这张“入口图”是本文方法论核心：
+
+### 2.1 注册表 key 在哪里
+
+看 `Registries`：
+
+-   `worldgen/biome` → `Registries.BIOME`
+    
+-   `worldgen/configured_feature` → `Registries.CONFIGURED_FEATURE`
+    
+-   `worldgen/placed_feature` → `Registries.PLACED_FEATURE`
+    
+-   `dimension_type` → `Registries.DIMENSION_TYPE`
+    
+-   `dimension`（LevelStem）→ `Registries.LEVEL_STEM`
+    
+-   `worldgen/noise_settings` → `Registries.NOISE_SETTINGS`
+    
+-   `worldgen/world_preset` → `Registries.WORLD_PRESET`
+    
+
+### 2.2 谁加载这些注册表数据
+
+看 `RegistryDataLoader.WORLDGEN_REGISTRIES` 与 `RegistryDataLoader.DIMENSION_REGISTRIES`。
+
+这解释了为什么 worldgen JSON 路径错误会直接导致注册失败。
+
+### 2.3 NeoForge world 修改入口
+
+-   接口：`BiomeModifier`
+    
+-   内置实现：`BiomeModifiers`
+    
+-   serializer 注册：`NeoForgeMod.ADD_FEATURES_BIOME_MODIFIER_TYPE` 等
+    
+-   动态注册表声明：`NeoForgeRegistries.Keys.BIOME_MODIFIERS`
+    
+-   启动应用：`ServerLifecycleHooks.runModifiers()`
+    
+
+* * *
+
+## 3\. 底层原理一：注册表 + Codec + 数据加载，是世界生成的一切前提
+
+## 3.1 先问“对象是谁”，再问“文件怎么写”
+
+很多教程上来就贴 JSON，但你真正需要先回答三问：
+
+1.  这个对象归哪个 registry？
+    
+2.  这个对象的 codec 定义在哪？
+    
+3.  这个 registry 是在哪个阶段被加载？
+    
+
+只要三问答清，JSON 自然就会写。
+
+## 3.2 Codec 的本质
+
+以 `DimensionType.DIRECT_CODEC` 为例：
+
+-   `min_y` 有范围约束
+    
+-   `height` 有范围约束
+    
+-   构造器还会二次校验（必须 16 的倍数、`min_y + height` 不能越界）
+    
+
+所以不是“字段名对了就行”，而是**值域也必须合法**。
+
+再看 `NoiseSettings.CODEC`，有 `comapFlatMap` 额外校验：
+
+-   `height % 16 == 0`
+    
+-   `min_y % 16 == 0`
+    
+
+这就是你经常看到“height has to be a multiple of 16”错误的根因。
+
+## 3.3 数据加载流程如何影响调试
+
+在 `RegistryDataLoader.load` 中，注册表会：
+
+1.  读取 JSON
+    
+2.  用 codec 解码
+    
+3.  freeze registry
+    
+4.  任何错误都汇总后抛异常
+    
+
+意味着：
+
+-   一个坏 JSON 可能阻断整个 registry
+    
+-   日志会打印 registry + element 级错误
+    
+
+你排错时必须优先看“最早出现的 decode 错误”。
+
+* * *
+
+## 4\. 底层原理二：区块状态机（ChunkStatus）决定生成顺序
+
+世界生成不是“一次函数调用”，而是状态推进。
+
+状态定义在 `ChunkStatus`：
+
+-   `BIOMES`
+    
+-   `NOISE`
+    
+-   `SURFACE`
+    
+-   `CARVERS`
+    
+-   `FEATURES`
+    
+-   `LIGHT`
+    
+-   `SPAWN`
+    
+-   `FULL`
+    
+
+顺序意义：
+
+-   你在错误阶段期待效果，会误判“功能没生效”
+    
+-   举例：feature 问题不该去怀疑 noise；noise 问题不该先看 spawns
+    
+
+辅助理解：`ProtoChunk.getNoiseBiome` 会在 BIOMES 之前直接抛错，说明阶段边界非常严格。
+
+* * *
+
+## 5\. 底层原理三：BiomeModifier 如何“改原版世界”
+
+## 5.1 修改不是替换，而是“拷贝 + 分阶段变更”
+
+关键数据结构：`ModifiableBiomeInfo`
+
+流程：
+
+1.  biome 构造时缓存原始数据（见 `Biome``构造器`）
+    
+2.  服务端初始化时按阶段应用 modifier（见 `applyBiomeModifiers`）
+    
+3.  运行期访问会读取修改后数据（例如 `Biome.getGenerationSettings()`）
+    
+
+## 5.2 阶段顺序不是装饰，而是逻辑保障
+
+阶段定义：`BiomeModifier.Phase`
+
+典型顺序：
+
+-   `ADD` 先加
+    
+-   `REMOVE` 再删
+    
+-   `MODIFY` 最后改值
+    
+
+如果你自己写 modifier，不遵循阶段语义，最常见后果是“被后续 modifier 覆盖”。
+
+## 5.3 内置 modifier 能做什么
+
+看 `BiomeModifiers`：
+
+-   加/删 placed features
+    
+-   加/删 spawns
+    
+-   加/删 carvers
+    
+-   加/删 spawn costs
+    
+
+它们本质就是对 builder 的列表操作（如 `BiomeGenerationSettingsBuilder.getFeatures()`）。
+
+* * *
+
+## 6\. 底层原理四：Feature 放置链（Feature -> Configured -> Placed）
+
+你可以把它理解成：
+
+1.  **Feature**：算法模板（怎么生成）
+    
+2.  **ConfiguredFeature**：算法 + 参数（生成什么）
+    
+3.  **PlacedFeature**：配置结果 + 放置规则（在哪儿、几次、以什么分布）
+    
+
+对应源码：
+
+-   模板：`Feature`
+    
+-   配置实例：`ConfiguredFeature`
+    
+-   放置实例：`PlacedFeature`
+    
+
+放置修饰器链路在 `PlacementModifier` 与 `PlacedFeature.placeWithContext`：
+
+-   起点 `BlockPos`
+    
+-   逐个 modifier 变换成位置流
+    
+-   对每个位置执行 configured feature 的 `place`
+    
+
+### 6.1 Feature 周期冲突（cycle）为什么会报错
+
+特征排序由 `FeatureSorter.buildFeaturesPerStep` 构建图并 DFS 检测。
+
+如果你把同一批 biome 的特征关系弄成循环，最终会抛 `Feature order cycle found`。
+
+这就是“随便塞原版 feature 到新 step”经常炸的底层原因。
+
+* * *
+
+## 7\. 底层原理五：噪声地形与生物群系分配（NoiseRouter + Climate）
+
+## 7.1 地形不是“一个噪声”，而是噪声网络
+
+`NoiseGeneratorSettings` 持有 `NoiseRouter`，而 router 本身由 `NoiseRouterData.bootstrap` 建出来。
+
+核心字段包含：
+
+-   continentalness
+    
+-   erosion
+    
+-   ridges
+    
+-   depth
+    
+-   finalDensity
+    
+
+### 7.2 RandomState 负责把“参数化图”实例化成“带 seed 的函数”
+
+看 `RandomState`：
+
+-   根据 seed 创建 noise 实例
+    
+-   包装路由函数
+    
+-   构建 `Climate.Sampler`
+    
+
+### 7.3 biome 分配通过 Climate 参数空间最近匹配
+
+看 `Climate.ParameterList.findValue` 与 `MultiNoiseBiomeSource.getNoiseBiome`。
+
+直觉上就是：
+
+-   sampler 在某位置采样到 `temperature/humidity/continentalness/...`
+    
+-   在 parameter list 里找“最匹配”的 biome
+    
+
+### 7.4 为什么原版 overworld biome 分布那么复杂
+
+因为它不是硬编码 if-else，而是 `OverworldBiomeBuilder` 通过大量 Climate 参数切片构建。
+
+这也解释了方法论：
+
+-   你要“轻改原版分布”时尽量别重写整个 Overworld 规则
+    
+-   更推荐在维度里用自定义 `multi_noise.biomes` 从小规模参数空间开始
+    
+
+* * *
+
+## 8\. 底层原理六：维度系统（DimensionType + LevelStem + WorldPreset）
+
+## 8.1 DimensionType：描述“这个宇宙的物理规则”
+
+字段定义见 `DimensionType`：
+
+-   时间是否固定
+    
+-   是否有天空/顶盖
+    
+-   是否高温
+    
+-   坐标缩放（影响跨维度换算）
+    
+-   min\_y / height / logical\_height
+    
+-   effects（客户端视觉）
+    
+
+## 8.2 LevelStem：维度实例的关键组合
+
+`LevelStem`：
+
+-   `type`: DimensionType holder
+    
+-   `generator`: ChunkGenerator
+    
+
+所以“新维度”最小定义一定是这两个。
+
+## 8.3 WorldPreset：创建世界时的维度集合
+
+`WorldPresets` 体现了标准组合：
+
+-   overworld
+    
+-   nether
+    
+-   end
+    
+
+你要把自定义维度纳入“世界预设”，就得提供 `worldgen/world_preset`。
+
+* * *
+
+## 9\. 方法论：四层递进开发法（L1→L4）
+
+这是本文最重要的“工程实践准则”：
+
+### L1：只改原版（BiomeModifier）
+
+-   风险最小
+    
+-   更新兼容性最好
+    
+-   适合 80% 内容模组
+    
+
+### L2：加自定义特征
+
+-   自己做 configured/placed feature
+    
+-   用 modifier 注入目标 biome
+    
+
+### L3：加自定义 biome
+
+-   有自己的 biome JSON
+    
+-   加自己的 feature/spawn/carver
+    
+-   接入 biome source
+    
+
+### L4：加自定义维度
+
+-   新 dimension\_type
+    
+-   新 level\_stem
+    
+-   新 world\_preset
+    
+-   独立 biome 分布策略
+    
+
+每层只新增一个复杂度，保证可验证、可回滚。
+
+* * *
+
+## 10\. 实战 L1：修改原版世界生成（最低风险，最高性价比）
+
+本章给一整套可直接复制改造的模板。
+
+## 10.1 目录结构（务必正确）
+
+```
+data/
+  <modid>/
+    neoforge/
+      biome_modifier/
+        add_ore_to_overworld.json
+        remove_vanilla_ore_from_plains.json
+        add_custom_spawns.json
+        remove_zombie_from_swamp.json
+        add_carver_example.json
+        remove_carver_example.json
+```
+
+> 注意：`biome_modifier` 在 `neoforge/` 下，不在 `worldgen/` 下。
+
+## 10.2 示例 1：给所有主世界 biome 加矿
+
+`data/<modid>/neoforge/biome_modifier/add_mythril_ore_to_overworld.json`
+
+```json
+{
+  "type": "neoforge:add_features",
+  "biomes": "#minecraft:is_overworld",
+  "features": "<modid>:ore_mythril_placed",
+  "step": "underground_ores"
+}
+```
+
+## 10.3 示例 2：只从指定 biome 删除某个矿
+
+`data/<modid>/neoforge/biome_modifier/remove_diamond_from_plains_forest.json`
+
+```json
+{
+  "type": "neoforge:remove_features",
+  "biomes": ["minecraft:plains", "minecraft:forest"],
+  "features": "minecraft:ore_diamond",
+  "steps": "underground_ores"
+}
+```
+
+## 10.4 示例 3：新增刷怪
+
+`data/<modid>/neoforge/biome_modifier/add_spawn_zombie_overworld.json`
+
+```json
+{
+  "type": "neoforge:add_spawns",
+  "biomes": "#minecraft:is_overworld",
+  "spawners": {
+    "type": "minecraft:zombie",
+    "weight": 25,
+    "minCount": 1,
+    "maxCount": 4
+  }
+}
+```
+
+## 10.5 示例 4：删除某些实体刷怪
+
+`data/<modid>/neoforge/biome_modifier/remove_creeper_from_desert.json`
+
+```json
+{
+  "type": "neoforge:remove_spawns",
+  "biomes": "minecraft:desert",
+  "entity_types": "minecraft:creeper"
+}
+```
+
+## 10.6 示例 5：批量设置 spawn cost
+
+`data/<modid>/neoforge/biome_modifier/add_spawn_cost_for_undead.json`
+
+```json
+{
+  "type": "neoforge:add_spawn_costs",
+  "biomes": "#minecraft:is_overworld",
+  "entity_types": ["minecraft:zombie", "minecraft:skeleton"],
+  "spawn_cost": {
+    "energy_budget": 1.0,
+    "charge": 0.2
+  }
+}
+```
+
+## 10.7 示例 6：添加 carver
+
+`data/<modid>/neoforge/biome_modifier/add_liquid_carver_to_deep_ocean.json`
+
+```json
+{
+  "type": "neoforge:add_carvers",
+  "biomes": "minecraft:deep_ocean",
+  "carvers": "minecraft:canyon",
+  "step": "air"
+}
+```
+
+## 10.8 验证步骤（L1）
+
+1.  先只放 1 个 modifier 文件
+    
+2.  启动后确认无 codec 报错
+    
+3.  逐个增加 modifier，防止多文件交叉干扰
+    
+4.  出现异常时按加载顺序回滚
+    
+
+* * *
+
+## 11\. 实战 L2：自定义地物（矿脉/树/植被）并注入指定 biome
+
+## 11.1 链路总览
+
+1.  定义 `configured_feature`
+    
+2.  定义 `placed_feature`
+    
+3.  用 `biome_modifier:add_features` 注入
+    
+
+## 11.2 示例 A：自定义矿脉
+
+### 文件 1：configured\_feature
+
+`data/<modid>/worldgen/configured_feature/ore_mythril.json`
+
+```json
+{
+  "type": "minecraft:ore",
+  "config": {
+    "size": 9,
+    "discard_chance_on_air_exposure": 0.0,
+    "targets": [
+      {
+        "target": {
+          "predicate_type": "minecraft:tag_match",
+          "tag": "minecraft:stone_ore_replaceables"
+        },
+        "state": { "Name": "<modid>:mythril_ore" }
+      },
+      {
+        "target": {
+          "predicate_type": "minecraft:tag_match",
+          "tag": "minecraft:deepslate_ore_replaceables"
+        },
+        "state": { "Name": "<modid>:deepslate_mythril_ore" }
+      }
+    ]
+  }
+}
+```
+
+### 文件 2：placed\_feature
+
+`data/<modid>/worldgen/placed_feature/ore_mythril_placed.json`
+
+```json
+{
+  "feature": "<modid>:ore_mythril",
+  "placement": [
+    { "type": "minecraft:count", "count": 8 },
+    { "type": "minecraft:in_square" },
+    {
+      "type": "minecraft:height_range",
+      "height": {
+        "type": "minecraft:trapezoid",
+        "min_inclusive": { "absolute": -48 },
+        "max_inclusive": { "absolute": 64 }
+      }
+    },
+    { "type": "minecraft:biome" }
+  ]
+}
+```
+
+### 文件 3：注入 biome
+
+`data/<modid>/neoforge/biome_modifier/add_mythril_ore_modifier.json`
+
+```json
+{
+  "type": "neoforge:add_features",
+  "biomes": "#minecraft:is_overworld",
+  "features": "<modid>:ore_mythril_placed",
+  "step": "underground_ores"
+}
+```
+
+## 11.3 示例 B：自定义地表植被 patch
+
+### configured\_feature
+
+`data/<modid>/worldgen/configured_feature/crystal_plant_patch.json`
+
+```json
+{
+  "type": "minecraft:random_patch",
+  "config": {
+    "tries": 64,
+    "xz_spread": 6,
+    "y_spread": 2,
+    "feature": {
+      "feature": {
+        "type": "minecraft:simple_block",
+        "config": {
+          "to_place": {
+            "type": "minecraft:simple_state_provider",
+            "state": { "Name": "<modid>:crystal_plant" }
+          }
+        }
+      },
+      "placement": [
+        { "type": "minecraft:block_predicate_filter", "predicate": { "type": "minecraft:would_survive", "state": { "Name": "<modid>:crystal_plant" } } }
+      ]
+    }
+  }
+}
+```
+
+### placed\_feature
+
+`data/<modid>/worldgen/placed_feature/crystal_plant_patch_placed.json`
+
+```json
+{
+  "feature": "<modid>:crystal_plant_patch",
+  "placement": [
+    { "type": "minecraft:count", "count": 3 },
+    { "type": "minecraft:in_square" },
+    { "type": "minecraft:heightmap", "heightmap": "WORLD_SURFACE_WG" },
+    { "type": "minecraft:biome" }
+  ]
+}
+```
+
+### biome modifier
+
+`data/<modid>/neoforge/biome_modifier/add_crystal_plants_to_snowy.json`
+
+```json
+{
+  "type": "neoforge:add_features",
+  "biomes": ["minecraft:snowy_plains", "minecraft:grove"],
+  "features": "<modid>:crystal_plant_patch_placed",
+  "step": "vegetal_decoration"
+}
+```
+
+* * *
+
+## 12\. 实战 L3：从 0 自定义新生物群系（Biome）并参与分布
+
+## 12.1 关键事实：注册一个 biome 不等于会自然出现
+
+你创建 `worldgen/biome/*.json` 只是在 registry 里有了对象。
+
+要自然生成，必须被某个 biome source 选中（例如 `multi_noise` 参数空间映射）。
+
+源码依据：`BiomeSource.getNoiseBiome`、`MultiNoiseBiomeSource.getNoiseBiome`。
+
+## 12.2 最小 biome 模板（可运行）
+
+`data/<modid>/worldgen/biome/crystal_fields.json`
+
+```json
+{
+  "has_precipitation": true,
+  "temperature": 0.5,
+  "downfall": 0.7,
+  "effects": {
+    "fog_color": 12638463,
+    "water_color": 4159204,
+    "water_fog_color": 329011,
+    "sky_color": 7972607,
+    "mood_sound": {
+      "sound": "minecraft:ambient.cave",
+      "tick_delay": 6000,
+      "block_search_extent": 8,
+      "offset": 2.0
+    }
+  },
+  "spawn_settings": {
+    "creature_spawn_probability": 0.1,
+    "spawners": {
+      "creature": [
+        {
+          "type": "minecraft:sheep",
+          "weight": 12,
+          "minCount": 2,
+          "maxCount": 4
+        }
+      ],
+      "monster": [
+        {
+          "type": "minecraft:zombie",
+          "weight": 80,
+          "minCount": 1,
+          "maxCount": 4
+        }
+      ]
+    },
+    "spawn_costs": {}
+  },
+  "generation_settings": {
+    "carvers": {
+      "air": ["minecraft:cave", "minecraft:cave_extra_underground"],
+      "liquid": ["minecraft:canyon"]
+    },
+    "features": [
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      ["minecraft:ore_coal_upper", "minecraft:ore_iron_upper"],
+      ["minecraft:ore_gold", "minecraft:ore_diamond"],
+      [],
+      ["<modid>:crystal_plant_patch_placed"],
+      []
+    ]
+  }
+}
+```
+
+> `features` 是“按 step ordinal 对齐的列表”，最容易写错。新手更建议把新增 feature 交给 biome\_modifier 注入。
+
+## 12.3 把新 biome 接入分布（自定义维度最稳）
+
+在自定义维度里使用 `biome_source.type = minecraft:multi_noise`，并直接填写 `biomes` 参数列表（见第 13 章）。
+
+原因：
+
+-   原版 overworld preset 过于复杂
+    
+-   `multi_noise_biome_source_parameter_list` 预设只内置 overworld/nether（见 `MultiNoiseBiomeSourceParameterLists`）
+    
+
+* * *
+
+## 13\. 实战 L4：完全自定义新维度 + 维度 biome 分布 + 预设
+
+这是完整链路，分 4 步。
+
+## 13.1 第一步：定义 DimensionType
+
+`data/<modid>/dimension_type/crystal_realm_type.json`
+
+```json
+{
+  "fixed_time": 6000,
+  "has_skylight": true,
+  "has_ceiling": false,
+  "ultrawarm": false,
+  "natural": false,
+  "coordinate_scale": 1.0,
+  "bed_works": true,
+  "respawn_anchor_works": false,
+  "min_y": -64,
+  "height": 384,
+  "logical_height": 384,
+  "infiniburn": "#minecraft:infiniburn_overworld",
+  "effects": "minecraft:overworld",
+  "ambient_light": 0.02,
+  "monster_settings": {
+    "piglin_safe": false,
+    "has_raids": true,
+    "monster_spawn_light_level": {
+      "type": "minecraft:uniform",
+      "value": { "min_inclusive": 0, "max_inclusive": 7 }
+    },
+    "monster_spawn_block_light_limit": 0
+  }
+}
+```
+
+字段严格对齐 `DimensionType.DIRECT_CODEC`。
+
+## 13.2 第二步：定义维度专属 biome
+
+例如：
+
+-   `data/<modid>/worldgen/biome/crystal_lowlands.json`
+    
+-   `data/<modid>/worldgen/biome/crystal_highlands.json`
+    
+-   `data/<modid>/worldgen/biome/crystal_voidsteppe.json`
+    
+
+每个 biome 都可有各自 spawns/features。
+
+## 13.3 第三步：定义 LevelStem（dimension 文件）
+
+`data/<modid>/dimension/crystal_realm.json`
+
+```json
+{
+  "type": "<modid>:crystal_realm_type",
+  "generator": {
+    "type": "minecraft:noise",
+    "settings": "minecraft:overworld",
+    "biome_source": {
+      "type": "minecraft:multi_noise",
+      "biomes": [
+        {
+          "parameters": {
+            "temperature": { "min": -1.0, "max": -0.1 },
+            "humidity": { "min": -1.0, "max": 1.0 },
+            "continentalness": { "min": -1.0, "max": 1.0 },
+            "erosion": { "min": -1.0, "max": 1.0 },
+            "depth": { "min": -1.0, "max": 0.0 },
+            "weirdness": { "min": -1.0, "max": 1.0 },
+            "offset": 0.0
+          },
+          "biome": "<modid>:crystal_lowlands"
+        },
+        {
+          "parameters": {
+            "temperature": { "min": -0.1, "max": 0.6 },
+            "humidity": { "min": -1.0, "max": 1.0 },
+            "continentalness": { "min": -1.0, "max": 1.0 },
+            "erosion": { "min": -1.0, "max": 1.0 },
+            "depth": { "min": 0.0, "max": 0.6 },
+            "weirdness": { "min": -1.0, "max": 1.0 },
+            "offset": 0.0
+          },
+          "biome": "<modid>:crystal_highlands"
+        },
+        {
+          "parameters": {
+            "temperature": { "min": 0.6, "max": 1.0 },
+            "humidity": { "min": -1.0, "max": 1.0 },
+            "continentalness": { "min": -1.0, "max": 1.0 },
+            "erosion": { "min": -1.0, "max": 1.0 },
+            "depth": { "min": 0.6, "max": 1.0 },
+            "weirdness": { "min": -1.0, "max": 1.0 },
+            "offset": 0.0
+          },
+          "biome": "<modid>:crystal_voidsteppe"
+        }
+      ]
+    }
+  }
+}
+```
+
+## 13.4 第四步：定义 world preset
+
+`data/<modid>/worldgen/world_preset/crystal_preset.json`
+
+```json
+{
+  "dimensions": {
+    "minecraft:overworld": {
+      "type": "minecraft:overworld",
+      "generator": {
+        "type": "minecraft:noise",
+        "settings": "minecraft:overworld",
+        "biome_source": {
+          "type": "minecraft:multi_noise",
+          "preset": "minecraft:overworld"
+        }
+      }
+    },
+    "minecraft:the_nether": {
+      "type": "minecraft:the_nether",
+      "generator": {
+        "type": "minecraft:noise",
+        "settings": "minecraft:nether",
+        "biome_source": {
+          "type": "minecraft:multi_noise",
+          "preset": "minecraft:nether"
+        }
+      }
+    },
+    "minecraft:the_end": {
+      "type": "minecraft:the_end",
+      "generator": {
+        "type": "minecraft:noise",
+        "settings": "minecraft:end",
+        "biome_source": {
+          "type": "minecraft:the_end"
+        }
+      }
+    },
+    "<modid>:crystal_realm": "<modid>:crystal_realm"
+  }
+}
+```
+
+## 13.5 维度开发最低可行验证法
+
+1.  先只有 `dimension_type + dimension`，不加 preset（用命令/自定义传送验证）
+    
+2.  再加 preset
+    
+3.  再加自定义 biome 分配
+    
+4.  最后再调噪声设置与地表规则
+    
+
+* * *
+
+## 14\. 进阶：自定义 BiomeModifier 类型（Java 侧扩展）
+
+当内置 `neoforge:add_* / remove_*` 不够时，用 Java 扩展。
+
+## 14.1 接口实现骨架
+
+```java
+package com.example.examplemod.worldgen;
+
+import com.mojang.serialization.MapCodec;
+import net.minecraft.core.Holder;
+import net.minecraft.world.level.biome.Biome;
+import net.neoforged.neoforge.common.world.BiomeModifier;
+import net.neoforged.neoforge.common.world.ModifiableBiomeInfo;
+
+public record ForceRainBiomeModifier(float minDownfall) implements BiomeModifier {
+    @Override
+    public void modify(Holder<Biome> biome, Phase phase, ModifiableBiomeInfo.BiomeInfo.Builder builder) {
+        if (phase != Phase.MODIFY) return;
+        var climate = builder.getClimateSettings();
+        if (climate.getDownfall() < minDownfall) {
+            climate.setDownfall(minDownfall);
+        }
+    }
+
+    @Override
+    public MapCodec<? extends BiomeModifier> codec() {
+        return ModBiomeModifierCodecs.FORCE_RAIN.get();
+    }
+}
+```
+
+## 14.2 serializer 注册
+
+```java
+package com.example.examplemod.worldgen;
+
+import com.mojang.serialization.MapCodec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.neoforged.neoforge.common.world.BiomeModifier;
+import net.neoforged.neoforge.registries.DeferredHolder;
+import net.neoforged.neoforge.registries.DeferredRegister;
+import net.neoforged.neoforge.registries.NeoForgeRegistries;
+
+public final class ModBiomeModifierCodecs {
+    public static final DeferredRegister<MapCodec<? extends BiomeModifier>> REG =
+        DeferredRegister.create(NeoForgeRegistries.Keys.BIOME_MODIFIER_SERIALIZERS, "examplemod");
+
+    public static final DeferredHolder<MapCodec<? extends BiomeModifier>, MapCodec<ForceRainBiomeModifier>> FORCE_RAIN =
+        REG.register("force_rain", () -> RecordCodecBuilder.mapCodec(i -> i.group(
+            com.mojang.serialization.Codec.FLOAT.fieldOf("min_downfall")
+                .forGetter(ForceRainBiomeModifier::minDownfall)
+        ).apply(i, ForceRainBiomeModifier::new)));
+}
+```
+
+## 14.3 数据文件使用
+
+`data/<modid>/neoforge/biome_modifier/force_rain_overworld.json`
+
+```json
+{
+  "type": "examplemod:force_rain",
+  "min_downfall": 0.6
+}
+```
+
+* * *
+
+## 15\. 进阶：地表规则（SurfaceRules）与噪声参数定制思路
+
+地表（顶层方块）受 `surface_rule` 控制，定义在 `noise_settings` 里。
+
+源码入口：`SurfaceRules`。
+
+## 15.1 你要知道的核心事实
+
+-   SurfaceRules 也是 codec 分发体系
+    
+-   condition 与 rule 都可组合
+    
+-   实际计算发生在噪声生成阶段
+    
+
+## 15.2 定制策略建议
+
+新手不要从 0 写完整 surface rule，建议：
+
+1.  先复用原版 `minecraft:overworld` noise settings
+    
+2.  只在 biome 层做特征与方块表现
+    
+3.  等系统稳定后再 fork noise settings 做 surface rule 小改
+    
+
+## 15.3 何时必须自定义 noise settings
+
+-   你要非标准高度（例如低重力浮空大陆）
+    
+-   你要彻底改地形风格（非 Overworld 逻辑）
+    
+-   你需要独立 spawn target 气候参数
+    
+
+相关定义：`NoiseGeneratorSettings`。
+
+* * *
+
+## 16\. 工程化方法：如何组织 worldgen 资源与版本升级策略
+
+## 16.1 推荐目录布局
+
+```
+data/<modid>/
+  dimension_type/
+  dimension/
+  neoforge/biome_modifier/
+  worldgen/
+    biome/
+    configured_feature/
+    placed_feature/
+    configured_carver/
+    noise_settings/
+    world_preset/
+```
+
+## 16.2 命名策略
+
+统一前缀：
+
+-   `ore_*`
+    
+-   `tree_*`
+    
+-   `biome_*`
+    
+-   `dim_*`
+    
+-   `preset_*`
+    
+
+避免“语义弱命名”如 `test1/test2/new_biome`。
+
+## 16.3 版本升级策略
+
+Minecraft/NeoForge 升级时优先检查：
+
+1.  codec 字段变更
+    
+2.  registry key 迁移
+    
+3.  noise 参数语义变化
+    
+4.  内置 biome modifier serializer 变化
+    
+
+* * *
+
+## 17\. 排错大全：从日志到根因定位（按错误类型索引）
+
+以下按“报错现象 -> 根因 -> 解决方式”组织。
+
+### 17.1 `Unknown registry element` / `Failed to parse`
+
+常见根因：
+
+-   路径放错注册表目录
+    
+-   `type` 写错命名空间
+    
+-   引用了不存在的 feature/carver/biome
+    
+
+定位方法：
+
+1.  看报错里 registry 名
+    
+2.  对照 `Registries`
+    
+3.  回查资源路径与 id
+    
+
+### 17.2 `height has to be multiple of 16`
+
+根因：`dimension_type` 或 `noise_settings` 里高度参数不合法。
+
+依据：`DimensionType``构造校验`、`NoiseSettings.guardY`。
+
+### 17.3 `Feature order cycle found`
+
+根因：feature step 关系形成循环。
+
+依据：`FeatureSorter.buildFeaturesPerStep`。
+
+处理：
+
+-   不要随意跨 step 搬运 vanilla 特征
+    
+-   先从单个 injected feature 开始
+    
+
+### 17.4 “新 biome 不生成”
+
+根因：未接入 biome source 参数空间。
+
+定位：检查 `dimension` 文件里的 `biome_source` 配置。
+
+### 17.5 “modifier 写了但看不到效果”
+
+根因候选：
+
+-   modifier 文件路径错误
+    
+-   `biomes` 过滤条件没命中
+    
+-   `features` 引用 ID 不存在
+    
+-   被后续 modifier 覆盖
+    
+
+验证点：`ServerLifecycleHooks.runModifiers` 生命周期时序。
+
+### 17.6 “维度存在但创建世界界面选不到”
+
+根因：缺少 `world_preset` 或 preset 未被使用。
+
+对照：`WorldPresets.bootstrap` 的标准模式。
+
+### 17.7 “能进维度但地形异常/全空/全石”
+
+根因候选：
+
+-   `generator.settings` 与 `dimension_type` 高度不匹配
+    
+-   自定义 noise settings 参数不合法
+    
+-   surface rule 不适配
+    
+
+先回退到 `minecraft:overworld` settings 做基线，再逐步改。
+
+### 17.8 “刷怪异常（过多/过少/无刷怪）”
+
+检查：
+
+-   biome 的 `spawn_settings`
+    
+-   biome modifier 是否 add/remove 了 spawns
+    
+-   spawn costs 是否过严
+    
+
+参考：`MobSpawnSettings`。
+
+* * *
+
+## 18\. 性能与稳定性：世界生成不是越复杂越好
+
+## 18.1 复杂度来源
+
+-   biome 参数点数量过多
+    
+-   feature 放置次数高 + 条件复杂
+    
+-   过多 carvers
+    
+-   过度自定义噪声网络
+    
+
+## 18.2 经验阈值建议
+
+-   新维度初期 biome 数量：2~5
+    
+-   每 biome 新增 placed feature：先 1~3
+    
+-   每次迭代只改一个方向（分布/频率/高度）
+    
+
+## 18.3 为什么要“渐进式调参”
+
+因为世界生成故障往往是组合问题。 一次改 10 个参数，你几乎无法定位根因。
+
+* * *
+
+## 19\. 最终落地清单：发布前必须自查的 60 条检查项
+
+下面给你按模块的检查表（建议发布前逐条过）：
+
+### 19.1 注册与路径（1~12）
+
+1.  所有 `worldgen` 资源在正确目录
+    
+2.  `biome_modifier` 在 `data/<modid>/neoforge/biome_modifier`
+    
+3.  所有 `type` 都是有效 id
+    
+4.  所有引用对象存在
+    
+5.  大小写一致
+    
+6.  命名空间统一
+    
+7.  无遗留 `examplemod` id
+    
+8.  无多余尾逗号
+    
+9.  JSON 编码为 UTF-8
+    
+10.  无 BOM 干扰
+     
+11.  路径无拼写错误
+     
+12.  启动日志无 registry decode 错误
+     
+
+### 19.2 Biome（13~22）
+
+13.  `effects` 字段完整
+     
+14.  `spawn_settings` 结构合法
+     
+15.  `generation_settings` 结构合法
+     
+16.  biome 至少能被 biome source 引用
+     
+17.  温度/降雨值合理
+     
+18.  生物群系视觉符合预期
+     
+19.  地表植被密度合理
+     
+20.  刷怪池无荒谬配置
+     
+21.  不依赖未加载资源
+     
+22.  兼容主世界/维度目标
+     
+
+### 19.3 Feature（23~34）
+
+23.  configured\_feature 可解析
+     
+24.  placed\_feature 可解析
+     
+25.  placement modifier 链合法
+     
+26.  step 选择合理
+     
+27.  生成频率可控
+     
+28.  高度范围合理
+     
+29.  不与关键结构强冲突
+     
+30.  无 feature cycle
+     
+31.  生存平衡可接受
+     
+32.  创造模式观察无异常
+     
+33.  区块边界表现正常
+     
+34.  多次进出世界结果稳定
+     
+
+### 19.4 BiomeModifier（35~44）
+
+35.  modifier 能命中目标 biome
+     
+36.  `ADD/REMOVE/MODIFY` 语义合理
+     
+37.  多个 modifier 顺序影响可解释
+     
+38.  无互相抵消配置
+     
+39.  删除行为不会破坏世界逻辑
+     
+40.  刷怪改动无 mob category 错位
+     
+41.  spawn cost 调整可验证
+     
+42.  carver 改动不过度
+     
+43.  服务端日志确认已应用
+     
+44.  客户端表现与服务端一致
+     
+
+### 19.5 维度（45~56）
+
+45.  dimension\_type 字段完整合法
+     
+46.  min\_y/height/logical\_height 通过约束
+     
+47.  dimension 文件 type 引用正确
+     
+48.  generator type 有效
+     
+49.  settings 引用有效
+     
+50.  biome\_source 配置有效
+     
+51.  world\_preset 引用维度正确
+     
+52.  世界创建界面可见（若期望可见）
+     
+53.  传送逻辑可达
+     
+54.  回主世界路径可达
+     
+55.  客户端 effects 正常
+     
+56.  存档重开不损坏
+     
+
+### 19.6 稳定性与发布（57~60）
+
+57.  新存档连续运行无崩溃
+     
+58.  老存档升级策略明确
+     
+59.  已记录已知兼容性限制
+     
+60.  文档说明了关键配置与可调参数
+     
+
+* * *
+
+## 20\. 总结：你应该真正带走的能力
+
+学完这篇之后，你不该只会“照抄一个 json”。 你应该获得的是下面这 6 个能力：
+
+1.  **能分层定位问题**：维度、地形、biome、feature、spawn、modifier 分得清
+    
+2.  **能从源码反推数据格式**：先看 registry，再看 codec，再写文件
+    
+3.  **能做低风险迭代**：L1→L4 逐层推进，不一口吃成胖子
+    
+4.  **能解释每个参数为什么存在**：不是玄学调参
+    
+5.  **能写可维护 worldgen 资源**：目录、命名、依赖、验证流程成体系
+    
+6.  **能在版本升级时有章可循**：先看 codec 与 registry 变化，再迁移数据
+    
+
+如果你按本文方法执行，世界生成开发会从“黑盒碰运气”，变成“可设计、可验证、可迭代”的工程工作流。
+
+* * *
+
+## 附录 A：速查索引（按需求反查源码）
+
+-   想改原版 biome 内容：`BiomeModifier`、`BiomeModifiers`
+    
+-   想查 modifier 何时应用：`ServerLifecycleHooks.runModifiers`
+    
+-   想查 biome 结构：`Biome.DIRECT_CODEC`
+    
+-   想查特征结构：`ConfiguredFeature.DIRECT_CODEC`、`PlacedFeature.DIRECT_CODEC`
+    
+-   想查地形噪声设置：`NoiseGeneratorSettings.DIRECT_CODEC`
+    
+-   想查维度类型字段：`DimensionType.DIRECT_CODEC`
+    
+-   想查维度定义：`LevelStem.CODEC`
+    
+-   想查预设：`WorldPresets`
+    
+-   想查注册表加载：`RegistryDataLoader`
+    
+
+* * *
+
+## 附录 B：常用模板集合（可直接复制后替换 `<modid>`）
+
+### B1. 最小 add\_features modifier
+
+```json
+{
+  "type": "neoforge:add_features",
+  "biomes": "#minecraft:is_overworld",
+  "features": "<modid>:example_feature_placed",
+  "step": "vegetal_decoration"
+}
+```
+
+### B2. 最小 biome
+
+```json
+{
+  "has_precipitation": true,
+  "temperature": 0.8,
+  "downfall": 0.4,
+  "effects": {
+    "fog_color": 12638463,
+    "water_color": 4159204,
+    "water_fog_color": 329011,
+    "sky_color": 7907327,
+    "mood_sound": {
+      "sound": "minecraft:ambient.cave",
+      "tick_delay": 6000,
+      "block_search_extent": 8,
+      "offset": 2.0
+    }
+  },
+  "spawn_settings": {
+    "creature_spawn_probability": 0.1,
+    "spawners": {},
+    "spawn_costs": {}
+  },
+  "generation_settings": {
+    "carvers": {},
+    "features": []
+  }
+}
+```
+
+### B3. 最小 dimension\_type
+
+```json
+{
+  "has_skylight": true,
+  "has_ceiling": false,
+  "ultrawarm": false,
+  "natural": false,
+  "coordinate_scale": 1.0,
+  "bed_works": true,
+  "respawn_anchor_works": false,
+  "min_y": -64,
+  "height": 384,
+  "logical_height": 384,
+  "infiniburn": "#minecraft:infiniburn_overworld",
+  "effects": "minecraft:overworld",
+  "ambient_light": 0.0,
+  "monster_settings": {
+    "piglin_safe": false,
+    "has_raids": true,
+    "monster_spawn_light_level": {
+      "type": "minecraft:uniform",
+      "value": { "min_inclusive": 0, "max_inclusive": 7 }
+    },
+    "monster_spawn_block_light_limit": 0
+  }
+}
+```
+
+### B4. 最小 dimension（LevelStem）
+
+```json
+{
+  "type": "<modid>:your_dimension_type",
+  "generator": {
+    "type": "minecraft:noise",
+    "settings": "minecraft:overworld",
+    "biome_source": {
+      "type": "minecraft:multi_noise",
+      "biomes": [
+        {
+          "parameters": {
+            "temperature": { "min": -1.0, "max": 1.0 },
+            "humidity": { "min": -1.0, "max": 1.0 },
+            "continentalness": { "min": -1.0, "max": 1.0 },
+            "erosion": { "min": -1.0, "max": 1.0 },
+            "depth": { "min": -1.0, "max": 1.0 },
+            "weirdness": { "min": -1.0, "max": 1.0 },
+            "offset": 0.0
+          },
+          "biome": "<modid>:your_biome"
+        }
+      ]
+    }
+  }
+}
+```
+
+* * *
+
+## 附录 C：学习路径建议
+
+### 1.
+
+-   学会 `neoforge:biome_modifier` 增删特征与刷怪
+    
+-   理解 `GenerationStep.Decoration`
+    
+
+### 2.
+
+-   自定义 2 个矿脉 + 1 个植被 patch
+    
+-   练习放置修饰器组合
+    
+
+### 3.
+
+-   新建 2~3 个 biome
+    
+-   做一个简单 multi\_noise 参数分区
+    
+
+### 4.
+
+-   新建独立维度
+    
+-   接 world preset
+    
+-   做一次完整平衡迭代
+    
+
+坚持这条路径，你会从“能用”快速进入“能设计”。

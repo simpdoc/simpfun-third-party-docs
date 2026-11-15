@@ -1,0 +1,12 @@
+{
+  "title": "ZeroNight（原Aris' Dream）",
+  "pages": [
+    "zeronight-introduction",
+    "first-start-server",
+    "aris-update-log",
+    "faq",
+    "zeronight-commands",
+    "configure-nethernet"
+  ],
+  "description": "ZeroNight 零夜互通整合包"
+}

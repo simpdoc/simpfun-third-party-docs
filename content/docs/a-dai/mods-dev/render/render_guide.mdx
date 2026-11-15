@@ -1,0 +1,1166 @@
+---
+title: "NeoForge 渲染开发完全指南"
+author: "阿呆皮革厂"
+license: "CC BY-NC-SA 4.0"
+---
+* * *
+
+## 目录
+
+1.  [前置知识：渲染到底在解决什么问题？](#1-%E5%89%8D%E7%BD%AE%E7%9F%A5%E8%AF%86%E6%B8%B2%E6%9F%93%E5%88%B0%E5%BA%95%E5%9C%A8%E8%A7%A3%E5%86%B3%E4%BB%80%E4%B9%88%E9%97%AE%E9%A2%98)
+    
+2.  [阅读渲染源码的方法论（新手可执行）](#2-%E9%98%85%E8%AF%BB%E6%B8%B2%E6%9F%93%E6%BA%90%E7%A0%81%E7%9A%84%E6%96%B9%E6%B3%95%E8%AE%BA%E6%96%B0%E6%89%8B%E5%8F%AF%E6%89%A7%E8%A1%8C)
+    
+3.  [渲染主循环总览：从](#3-%E6%B8%B2%E6%9F%93%E4%B8%BB%E5%BE%AA%E7%8E%AF%E6%80%BB%E8%A7%88%E4%BB%8E-gamerenderer-%E5%88%B0-levelrenderer) `GameRenderer` [到](#3-%E6%B8%B2%E6%9F%93%E4%B8%BB%E5%BE%AA%E7%8E%AF%E6%80%BB%E8%A7%88%E4%BB%8E-gamerenderer-%E5%88%B0-levelrenderer) `LevelRenderer`
+    
+4.  [数学基础：](#4-%E6%95%B0%E5%AD%A6%E5%9F%BA%E7%A1%80posestack%E7%9F%A9%E9%98%B5%E6%B3%95%E7%BA%BF%E7%9F%A9%E9%98%B5)`PoseStack`[、矩阵、法线矩阵](#4-%E6%95%B0%E5%AD%A6%E5%9F%BA%E7%A1%80posestack%E7%9F%A9%E9%98%B5%E6%B3%95%E7%BA%BF%E7%9F%A9%E9%98%B5)
+    
+5.  [顶点基础：](#5-%E9%A1%B6%E7%82%B9%E5%9F%BA%E7%A1%80vertexconsumerbufferbuildertesselator)`VertexConsumer`[、](#5-%E9%A1%B6%E7%82%B9%E5%9F%BA%E7%A1%80vertexconsumerbufferbuildertesselator)`BufferBuilder`[、](#5-%E9%A1%B6%E7%82%B9%E5%9F%BA%E7%A1%80vertexconsumerbufferbuildertesselator)`Tesselator`
+    
+6.  [状态机基础：](#6-%E7%8A%B6%E6%80%81%E6%9C%BA%E5%9F%BA%E7%A1%80rendersystemrenderstateshardrendertype)`RenderSystem`[、](#6-%E7%8A%B6%E6%80%81%E6%9C%BA%E5%9F%BA%E7%A1%80rendersystemrenderstateshardrendertype)`RenderStateShard`[、](#6-%E7%8A%B6%E6%80%81%E6%9C%BA%E5%9F%BA%E7%A1%80rendersystemrenderstateshardrendertype)`RenderType`
+    
+7.  [批处理基础：](#7-%E6%89%B9%E5%A4%84%E7%90%86%E5%9F%BA%E7%A1%80multibuffersource-%E4%B8%8E-renderbuffers)`MultiBufferSource` [与](#7-%E6%89%B9%E5%A4%84%E7%90%86%E5%9F%BA%E7%A1%80multibuffersource-%E4%B8%8E-renderbuffers) `RenderBuffers`
+    
+8.  [世界渲染注入点：](#8-%E4%B8%96%E7%95%8C%E6%B8%B2%E6%9F%93%E6%B3%A8%E5%85%A5%E7%82%B9renderlevelstageevent-%E5%88%86%E9%98%B6%E6%AE%B5%E6%80%9D%E7%BB%B4)`RenderLevelStageEvent` [分阶段思维](#8-%E4%B8%96%E7%95%8C%E6%B8%B2%E6%9F%93%E6%B3%A8%E5%85%A5%E7%82%B9renderlevelstageevent-%E5%88%86%E9%98%B6%E6%AE%B5%E6%80%9D%E7%BB%B4)
+    
+9.  [区块重建注入：](#9-%E5%8C%BA%E5%9D%97%E9%87%8D%E5%BB%BA%E6%B3%A8%E5%85%A5addsectiongeometryevent-%E4%B8%8E%E7%BA%BF%E7%A8%8B%E8%BE%B9%E7%95%8C)`AddSectionGeometryEvent` [与线程边界](#9-%E5%8C%BA%E5%9D%97%E9%87%8D%E5%BB%BA%E6%B3%A8%E5%85%A5addsectiongeometryevent-%E4%B8%8E%E7%BA%BF%E7%A8%8B%E8%BE%B9%E7%95%8C)
+    
+10.  [着色器体系：](#10-%E7%9D%80%E8%89%B2%E5%99%A8%E4%BD%93%E7%B3%BBregistershadersevent--shaderinstance)`RegisterShadersEvent` [+](#10-%E7%9D%80%E8%89%B2%E5%99%A8%E4%BD%93%E7%B3%BBregistershadersevent--shaderinstance) `ShaderInstance`
+     
+11.  [命名渲染类型：](#11-%E5%91%BD%E5%90%8D%E6%B8%B2%E6%9F%93%E7%B1%BB%E5%9E%8Bregisternamedrendertypesevent--rendertypegroup)`RegisterNamedRenderTypesEvent` [+](#11-%E5%91%BD%E5%90%8D%E6%B8%B2%E6%9F%93%E7%B1%BB%E5%9E%8Bregisternamedrendertypesevent--rendertypegroup) `RenderTypeGroup`
+     
+12.  [模型体系：](#12-%E6%A8%A1%E5%9E%8B%E4%BD%93%E7%B3%BBmodeleventigeometryloaderiunbakedgeometry)`ModelEvent`[、](#12-%E6%A8%A1%E5%9E%8B%E4%BD%93%E7%B3%BBmodeleventigeometryloaderiunbakedgeometry)`IGeometryLoader`[、](#12-%E6%A8%A1%E5%9E%8B%E4%BD%93%E7%B3%BBmodeleventigeometryloaderiunbakedgeometry)`IUnbakedGeometry`
+     
+13.  [动态模型数据：](#13-%E5%8A%A8%E6%80%81%E6%A8%A1%E5%9E%8B%E6%95%B0%E6%8D%AEmodeldata--modelproperty--modeldatamanager)`ModelData` [/](#13-%E5%8A%A8%E6%80%81%E6%A8%A1%E5%9E%8B%E6%95%B0%E6%8D%AEmodeldata--modelproperty--modeldatamanager) `ModelProperty` [/](#13-%E5%8A%A8%E6%80%81%E6%A8%A1%E5%9E%8B%E6%95%B0%E6%8D%AEmodeldata--modelproperty--modeldatamanager) `ModelDataManager`
+     
+14.  [实体与方块实体渲染：](#14-%E5%AE%9E%E4%BD%93%E4%B8%8E%E6%96%B9%E5%9D%97%E5%AE%9E%E4%BD%93%E6%B8%B2%E6%9F%93entityrenderersevent)`EntityRenderersEvent`
+     
+15.  [屏幕与 HUD：](#15-%E5%B1%8F%E5%B9%95%E4%B8%8E-hudrenderguieventrenderguilayereventiitemdecorator)`RenderGuiEvent`[、](#15-%E5%B1%8F%E5%B9%95%E4%B8%8E-hudrenderguieventrenderguilayereventiitemdecorator)`RenderGuiLayerEvent`[、](#15-%E5%B1%8F%E5%B9%95%E4%B8%8E-hudrenderguieventrenderguilayereventiitemdecorator)`IItemDecorator`
+     
+16.  [视口与镜头：](#16-%E8%A7%86%E5%8F%A3%E4%B8%8E%E9%95%9C%E5%A4%B4viewportevent%E9%9B%BEfov%E7%9B%B8%E6%9C%BA%E8%A7%92)`ViewportEvent`[（雾/FOV/相机角）](#16-%E8%A7%86%E5%8F%A3%E4%B8%8E%E9%95%9C%E5%A4%B4viewportevent%E9%9B%BEfov%E7%9B%B8%E6%9C%BA%E8%A7%92)
+     
+17.  [从源码抽象出的渲染方法论（可复用工作流）](#17-%E4%BB%8E%E6%BA%90%E7%A0%81%E6%8A%BD%E8%B1%A1%E5%87%BA%E7%9A%84%E6%B8%B2%E6%9F%93%E6%96%B9%E6%B3%95%E8%AE%BA%E5%8F%AF%E5%A4%8D%E7%94%A8%E5%B7%A5%E4%BD%9C%E6%B5%81)
+     
+18.  [大量代码模板（按场景直接套）](#18-%E5%A4%A7%E9%87%8F%E4%BB%A3%E7%A0%81%E6%A8%A1%E6%9D%BF%E6%8C%89%E5%9C%BA%E6%99%AF%E7%9B%B4%E6%8E%A5%E5%A5%97)
+     
+19.  [排错、性能与稳定性清单](#19-%E6%8E%92%E9%94%99%E6%80%A7%E8%83%BD%E4%B8%8E%E7%A8%B3%E5%AE%9A%E6%80%A7%E6%B8%85%E5%8D%95)
+     
+
+* * *
+
+## 1\. 前置知识：渲染到底在解决什么问题？
+
+对新手最重要的一句话：**渲染不是‘把图片画出来’，而是‘在正确时间、用正确状态、把正确顶点交给正确管线’。**
+
+从源码看，渲染由以下层次构成：
+
+1.  时间层：本帧处于哪一个阶段（天空、实体后、天气后……）
+    
+2.  数据层：你提供哪些顶点（位置、UV、颜色、光照、法线）
+    
+3.  状态层：当前 OpenGL/渲染状态（深度、混合、剔除、输出目标）
+    
+4.  资源层：纹理、着色器、模型是否加载且匹配
+    
+5.  线程层：当前代码跑在主线程、渲染线程还是区块构建线程
+    
+
+如果任意一层错位，就会出现：
+
+-   物体不显示
+    
+-   透明排序错误
+    
+-   闪烁/穿插
+    
+-   崩溃（线程错误、状态污染）
+    
+-   性能雪崩（每帧重复构建/错误批次）
+    
+
+方法论目标：你以后写渲染，不再靠‘试出来’，而是靠**五层定位法**快速判断问题在哪一层。
+
+* * *
+
+## 2\. 阅读渲染源码的方法论（新手可执行）
+
+和 `NEOFORGE_ITEM_TUTORIAL.md` 一样，我们坚持‘先注释、再签名、再调用链、最后时序图’。
+
+### 2.1 第一步：看事件类 Javadoc
+
+比如 `RenderLevelStageEvent` 开头就写清楚：
+
+-   事件在 `LevelRenderer.renderLevel` 的多个阶段触发
+    
+-   你必须根据 `getStage()` 决定何时渲染
+    
+
+这类注释直接告诉你‘什么时候做事’，优先级极高。
+
+### 2.2 第二步：看字段和 getter，确认上下文是否齐全
+
+同一个事件里通常包含：
+
+-   相机 `Camera`
+    
+-   矩阵 `getModelViewMatrix()`
+    
+-   投影 `getProjectionMatrix()`
+    
+-   `PoseStack` `getPoseStack()`
+    
+-   裁剪锥 `getFrustum()`
+    
+
+如果一个 API 没给你这些上下文，你就别在这里做复杂渲染。
+
+### 2.3 第三步：顺调用链找‘谁在什么时候 post 事件’
+
+例如 `ClientHooks.dispatchRenderStage()` 会 `NeoForge.EVENT_BUS.post(...)`。 继续上溯到 `LevelRenderer` 和 `GameRenderer` 就能得到准确触发时机。
+
+### 2.4 第四步：画时序图，不画图就很难稳定
+
+```text
+GameRenderer.renderLevel
+  -> LevelRenderer.renderLevel
+     -> sky
+     -> AFTER_SKY
+     -> solid/cutout
+     -> entities
+     -> AFTER_ENTITIES
+     -> block entities
+     -> AFTER_BLOCK_ENTITIES
+     -> translucent/tripwire/particles
+     -> AFTER_PARTICLES
+     -> weather
+     -> AFTER_WEATHER
+  -> AFTER_LEVEL
+```
+
+这张图是你做一切世界渲染扩展的基础地图。
+
+* * *
+
+## 3\. 渲染主循环总览：从 `GameRenderer` 到 `LevelRenderer`
+
+关键入口：`GameRenderer.renderLevel()`
+
+你必须建立一个认知：
+
+-   `GameRenderer` 负责相机、FOV、投影矩阵与总调度
+    
+-   `LevelRenderer` 负责世界内容（区块、实体、粒子、天气等）
+    
+
+### 3.1 `GameRenderer` 里做了什么
+
+1.  计算 partialTick `deltaTracker`
+    
+2.  更新光照纹理 `lightTexture.updateLightTexture`
+    
+3.  相机 setup `camera.setup`
+    
+4.  计算 FOV / Projection `getFov`
+    
+5.  调用 `LevelRenderer.renderLevel`
+    
+6.  结束后抛出 `AFTER_LEVEL`
+    
+
+### 3.2 `LevelRenderer` 里做了什么（按阶段）
+
+源码可直接对照：
+
+-   天空后 `AFTER_SKY`
+    
+-   实体后 `AFTER_ENTITIES`
+    
+-   方块实体后 `AFTER_BLOCK_ENTITIES`
+    
+-   粒子后 `AFTER_PARTICLES`
+    
+-   天气后 `AFTER_WEATHER`
+    
+
+### 3.3 方法论：所有渲染需求先映射到阶段
+
+你提出一个效果前，先回答三个问题：
+
+-   它需要深度测试吗？
+    
+-   它要不要受天气/雾影响？
+    
+-   它是不是透明物体，需要排序？
+    
+
+回答后才能选阶段；阶段选错，后面调一年都不稳。
+
+* * *
+
+## 4\. 数学基础：`PoseStack`、矩阵、法线矩阵
+
+学习渲染一定要懂 `PoseStack`。
+
+### 4.1 `PoseStack` 的本质
+
+它是一个矩阵栈：
+
+-   `pushPose()` 保存当前变换
+    
+-   `popPose()` 恢复上一层
+    
+-   `translate()`
+    
+-   `scale()`
+    
+-   `mulPose()`
+    
+
+### 4.2 为什么它还存了 normal 矩阵
+
+见 `PoseStack.Pose`：
+
+-   `pose` 是 4x4 位置矩阵
+    
+-   `normal` 是 3x3 法线矩阵
+    
+
+当你做非等比缩放时，法线要逆转置修正（源码里 `computeNormalMatrix()`）。
+
+### 4.3 新手最容易犯错
+
+-   忘记 `push/pop`，导致后续所有渲染偏移
+    
+-   在一个事件里改矩阵却不恢复
+    
+-   误以为 `scale` 不会影响光照
+    
+
+### 4.4 底层视角：`VertexConsumer` 怎么用这个矩阵
+
+看 `VertexConsumer.addVertex(Matrix4f, ...)`，顶点会先乘当前矩阵再写入缓冲。
+
+看 `VertexConsumer.setNormal(PoseStack.Pose, ...)`，法线会走 normal 矩阵。
+
+### 4.5 代码示例：最小安全变换模板
+
+```java
+public static void renderSomething(PoseStack poseStack) {
+    poseStack.pushPose();
+    try {
+        poseStack.translate(0.5F, 1.0F, 0.5F);
+        poseStack.scale(0.75F, 0.75F, 0.75F);
+        // draw ...
+    } finally {
+        poseStack.popPose();
+    }
+}
+```
+
+方法论：只要你进入自定义绘制，就先开一层 `push`；这是防止状态污染最便宜的保险。
+
+* * *
+
+## 5\. 顶点基础：`VertexConsumer`、`BufferBuilder`、`Tesselator`
+
+### 5.1 顶点包含什么
+
+在 `VertexConsumer` 中，标准顶点写入链是：
+
+-   `addVertex(x,y,z)`
+    
+-   `setColor(...)`
+    
+-   `setUv(u,v)`
+    
+-   `setOverlay(...)`
+    
+-   `setLight(...)`
+    
+-   `setNormal(...)`
+    
+
+一个字段漏写，`BufferBuilder` 会在结束顶点时报错（见 `Missing elements in vertex`）。
+
+### 5.2 `BufferBuilder` 的本质
+
+`BufferBuilder` 是‘把顶点序列编码成 GPU 可上传网格’的构建器。
+
+核心路径：
+
+-   通过 `beginVertex()` 分配顶点内存
+    
+-   各字段按偏移写入
+    
+-   `build()` 产出 `MeshData`
+    
+
+### 5.3 `Tesselator` 只是工厂+缓冲持有
+
+`Tesselator.begin()` 返回 `BufferBuilder`。 它不是魔法类，核心仍是顶点格式和写入顺序。
+
+### 5.4 代码示例：用 `VertexConsumer` 输出一个四边形
+
+```java
+public static void emitQuad(VertexConsumer vc, PoseStack.Pose pose, int light, int overlay) {
+    vc.addVertex(pose, 0, 0, 0).setColor(255,255,255,255).setUv(0,0).setLight(light).setOverlay(overlay).setNormal(pose, 0,1,0);
+    vc.addVertex(pose, 1, 0, 0).setColor(255,255,255,255).setUv(1,0).setLight(light).setOverlay(overlay).setNormal(pose, 0,1,0);
+    vc.addVertex(pose, 1, 0, 1).setColor(255,255,255,255).setUv(1,1).setLight(light).setOverlay(overlay).setNormal(pose, 0,1,0);
+    vc.addVertex(pose, 0, 0, 1).setColor(255,255,255,255).setUv(0,1).setLight(light).setOverlay(overlay).setNormal(pose, 0,1,0);
+}
+```
+
+方法论：先确保‘能稳定写出一个正确四边形’，再谈复杂材质/特效。
+
+* * *
+
+## 6\. 状态机基础：`RenderSystem`、`RenderStateShard`、`RenderType`
+
+### 6.1 为什么说渲染是状态机
+
+`RenderSystem` 维护全局状态：
+
+-   深度测试 `enableDepthTest()`
+    
+-   混合 `enableBlend()`
+    
+-   混合方程 `blendFuncSeparate()`
+    
+-   雾参数 `setShaderFogStart()`
+    
+-   颜色参数 `setShaderColor()`
+    
+
+如果你改了状态不恢复，会污染其他渲染。
+
+### 6.2 `RenderStateShard`：状态片段
+
+`RenderStateShard` 把常用状态封装成可组合组件：
+
+-   透明 `TRANSLUCENT_TRANSPARENCY`
+    
+-   深度测试 `LEQUAL_DEPTH_TEST`
+    
+-   剔除 `NO_CULL`
+    
+-   输出目标 `PARTICLES_TARGET`
+    
+
+### 6.3 `RenderType`：顶点格式 + 图元模式 + 状态组合
+
+在 `RenderType` 里你能看到大量预设：
+
+-   `solid`
+    
+-   `cutout`
+    
+-   `translucent`
+    
+-   `lines`
+    
+
+### 6.4 方法论：先选 RenderType，再画顶点
+
+顺序不要反：
+
+1.  这个几何是区块层还是实体层？
+    
+2.  需要透明排序吗？
+    
+3.  顶点格式是 `BLOCK` 还是 `NEW_ENTITY`？
+    
+
+只有这三个答案都明确，才进入编码。
+
+* * *
+
+## 7\. 批处理基础：`MultiBufferSource` 与 `RenderBuffers`
+
+### 7.1 `MultiBufferSource` 的作用
+
+`MultiBufferSource.BufferSource` 会按 `RenderType` 聚合顶点，最后统一 `endBatch` 上传绘制。
+
+关键逻辑：
+
+-   `getBuffer(renderType)`
+    
+-   `endBatch(renderType)`
+    
+-   透明类型可能 `sortOnUpload()`
+    
+
+### 7.2 `RenderBuffers` 的扩展点
+
+`RenderBuffers` 构造时会 post `RegisterRenderBuffersEvent`。
+
+也就是：你可以为自定义 `RenderType` 注册专用缓冲，避免跟共享缓冲互相挤压。
+
+### 7.3 代码示例：注册自定义 render buffer
+
+```java
+@SubscribeEvent
+public static void onRegisterRenderBuffers(RegisterRenderBuffersEvent event) {
+    RenderType myType = MyRenderTypes.MY_DEBUG_TYPE;
+    event.registerRenderBuffer(myType);
+}
+```
+
+参考约束：`registerRenderBuffer` 会检查重复注册。
+
+* * *
+
+## 8\. 世界渲染注入点：`RenderLevelStageEvent` 分阶段思维
+
+### 8.1 你能拿到什么
+
+在 `RenderLevelStageEvent` 中：
+
+-   `Stage`
+    
+-   `PoseStack`
+    
+-   模型/投影矩阵
+    
+-   相机、Frustum
+    
+-   renderTick / partialTick
+    
+
+### 8.2 内置阶段含义
+
+见 `Stage` 常量：
+
+-   `AFTER_SKY`
+    
+-   `AFTER_SOLID_BLOCKS`
+    
+-   `AFTER_CUTOUT_MIPPED_BLOCKS_BLOCKS`
+    
+-   `AFTER_CUTOUT_BLOCKS`
+    
+-   `AFTER_ENTITIES`
+    
+-   `AFTER_BLOCK_ENTITIES`
+    
+-   `AFTER_TRANSLUCENT_BLOCKS`
+    
+-   `AFTER_TRIPWIRE_BLOCKS`
+    
+-   `AFTER_PARTICLES`
+    
+-   `AFTER_WEATHER`
+    
+-   `AFTER_LEVEL`
+    
+
+源码特别提示：透明阶段有排序限制，见 `AFTER_TRANSLUCENT_BLOCKS``注释`。
+
+### 8.3 自定义阶段
+
+通过 `RegisterStageEvent.register(...)` 可绑定到某个 `RenderType`，实现自动触发。
+
+### 8.4 模板：世界阶段渲染监听
+
+```java
+@SubscribeEvent
+public static void onRenderLevelStage(RenderLevelStageEvent event) {
+    if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_PARTICLES) return;
+
+    PoseStack pose = event.getPoseStack();
+    pose.pushPose();
+    try {
+        Camera camera = event.getCamera();
+        // 这里写你的世界空间绘制
+    } finally {
+        pose.popPose();
+    }
+}
+```
+
+* * *
+
+## 9\. 区块重建注入：`AddSectionGeometryEvent` 与线程边界
+
+这是高级且非常实用的能力：向区块网格里塞静态几何。
+
+### 9.1 关键线程语义（必须背下来）
+
+`AddSectionGeometryEvent``注释` 讲得很直白：
+
+-   事件本身在主线程触发
+    
+-   你注册的 renderer 多数在区块构建线程执行（通常不是主线程）
+    
+
+这意味着：
+
+-   主线程先抓取线程安全快照
+    
+-   renderer 只消费快照，不读非线程安全全局
+    
+
+### 9.2 `SectionRenderingContext` 给了什么
+
+见 `SectionRenderingContext`：
+
+-   `getOrCreateChunkBuffer()`
+    
+-   `getQuadLighter()`
+    
+-   `getPoseStack()`
+    
+-   `getRegion()`
+    
+
+### 9.3 模板：线程安全的 Section 几何注入
+
+```java
+@SubscribeEvent
+public static void onAddSectionGeometry(AddSectionGeometryEvent event) {
+    // 主线程：计算并抓取快照
+    final BlockPos sectionOrigin = event.getSectionOrigin();
+    final MyRenderSnapshot snapshot = MyDataSystem.snapshotForSection(event.getLevel(), sectionOrigin);
+
+    if (snapshot.isEmpty()) return;
+
+    event.addRenderer(ctx -> {
+        // 构建线程：只使用 snapshot
+        VertexConsumer vc = ctx.getOrCreateChunkBuffer(RenderType.cutout());
+        PoseStack pose = ctx.getPoseStack();
+        pose.pushPose();
+        try {
+            snapshot.emit(vc, pose.last());
+        } finally {
+            pose.popPose();
+        }
+    });
+}
+```
+
+方法论：这里的难点不是画图，而是**线程设计**。
+
+* * *
+
+## 10\. 着色器体系：`RegisterShadersEvent` + `ShaderInstance`
+
+### 10.1 注册入口
+
+`RegisterShadersEvent` 用来注册自定义 `ShaderInstance`。 关键提醒：不要缓存传入对象本身，缓存回调里 onLoaded 的对象（见注释 `line 50`）。
+
+### 10.2 `ShaderInstance` 底层怎么工作
+
+在 `ShaderInstance``构造` 中会：
+
+1.  读取 `shaders/core/*.json`
+    
+2.  解析 samplers/uniforms
+    
+3.  编译 vertex + fragment 程序
+    
+4.  链接 program
+    
+5.  缓存 uniform 位置
+    
+
+在 `apply()` 时会绑定 sampler、上传 uniform。
+
+### 10.3 默认 uniform 注入
+
+见 `setDefaultUniforms(...)`：
+
+-   模型/投影矩阵
+    
+-   颜色调制
+    
+-   雾参数
+    
+-   游戏时间
+    
+-   屏幕尺寸
+    
+-   线宽
+    
+-   光方向
+    
+
+### 10.4 模板：注册一个 shader
+
+```java
+@EventBusSubscriber(value = Dist.CLIENT, modid = MODID, bus = EventBusSubscriber.Bus.MOD)
+public final class MyShaderRegistry {
+    private static ShaderInstance MY_SHADER;
+
+    @SubscribeEvent
+    public static void onRegisterShaders(RegisterShadersEvent event) throws IOException {
+        event.registerShader(
+            new ShaderInstance(event.getResourceProvider(), ResourceLocation.fromNamespaceAndPath(MODID, "my_shader"), DefaultVertexFormat.NEW_ENTITY),
+            shader -> MY_SHADER = shader
+        );
+    }
+
+    public static ShaderInstance get() {
+        return Objects.requireNonNull(MY_SHADER, "Shader not loaded yet");
+    }
+}
+```
+
+* * *
+
+## 11\. 命名渲染类型：`RegisterNamedRenderTypesEvent` + `RenderTypeGroup`
+
+### 11.1 为什么要有 Named Render Type
+
+模型 JSON 里经常只写名字，不直接写 Java 对象。 `NamedRenderTypeManager` 负责名字到 `RenderTypeGroup` 的映射。
+
+### 11.2 约束（非常关键）
+
+`RegisterNamedRenderTypesEvent.register` 会校验：
+
+-   block type 必须是 `BLOCK` 顶点格式
+    
+-   必须是 chunk layer
+    
+-   entity/fabulous 必须是 `NEW_ENTITY`
+    
+
+### 11.3 预注册的 vanilla 命名
+
+见 `preRegisterVanillaRenderTypes`。
+
+### 11.4 模板：注册命名 render type
+
+```java
+@SubscribeEvent
+public static void onRegisterNamedRenderTypes(RegisterNamedRenderTypesEvent event) {
+    event.register(
+        ResourceLocation.fromNamespaceAndPath(MODID, "my_translucent_fx"),
+        RenderType.translucent(),
+        NeoForgeRenderTypes.ITEM_UNSORTED_TRANSLUCENT.get()
+    );
+}
+```
+
+* * *
+
+## 12\. 模型体系：`ModelEvent`、`IGeometryLoader`、`IUnbakedGeometry`
+
+### 12.1 关键事件
+
+`ModelEvent` 下常见四类：
+
+-   `RegisterGeometryLoaders`
+    
+-   `RegisterAdditional`
+    
+-   `ModifyBakingResult`
+    
+-   `BakingCompleted`
+    
+
+### 12.2 线程警告
+
+`ModifyBakingResult``注释` 明确说它在 worker thread 触发。 这意味着你不能在这里乱访问主线程对象。
+
+### 12.3 几何加载接口
+
+`IGeometryLoader` 负责 JSON -> UnbakedGeometry。 `IUnbakedGeometry` 负责 bake 生成 `BakedModel`。
+
+### 12.4 Loader 管理器
+
+`GeometryLoaderManager.init()` 会收集所有注册 loader。
+
+### 12.5 官方示例（NeoForge 自己的注册）
+
+`ClientNeoForgeMod.onRegisterGeometryLoaders` 注册了：
+
+-   `empty`
+    
+-   `elements`
+    
+-   `obj`
+    
+-   `fluid_container`
+    
+-   `composite`
+    
+-   `item_layers`
+    
+-   `separate_transforms`
+    
+
+### 12.6 `ObjLoader` 读 OBJ 的方法论
+
+`ObjLoader.read` 解析 `model/automatic_culling/shade_quads/flip_v/...`。 `ObjModel.parse` 处理 `v/vt/vn/f/usemtl/s/g/o`。
+
+你可以把它当成‘自定义格式 loader 的完整工业级参考实现’。
+
+### 12.7 `CompositeModel` 与多层渲染
+
+`CompositeModel` 支持按子部件组合，内部 `Baked.Builder` 可按 `RenderTypeGroup` 分层输出。
+
+### 12.8 `ItemLayerModel` 与逐层 RenderType
+
+`ItemLayerModel` 支持 per-layer render type names（见 `render_types``解析`）。
+
+* * *
+
+## 13\. 动态模型数据：`ModelData` / `ModelProperty` / `ModelDataManager`
+
+### 13.1 `ModelData` 的硬约束
+
+源码明确要求：数据必须 immutable 或 thread-safe，见 `ModelData``注释`。
+
+### 13.2 `ModelProperty` 可做值校验
+
+`ModelProperty.test()` 决定值是否合法。
+
+### 13.3 生命周期管理
+
+`ModelDataManager` 负责：
+
+-   请求刷新 `requestRefresh`
+    
+-   分区查询 `getAt(SectionPos)`
+    
+-   区域快照 `snapshotSectionRegion`
+    
+-   卸载清理 `onChunkUnload`
+    
+
+### 13.4 方法论
+
+-   模型数据不是“随便塞对象”的袋子
+    
+-   它是“跨线程渲染输入契约”
+    
+-   一旦你能把业务状态转成稳定 `ModelData`，渲染逻辑会立刻清晰
+    
+
+* * *
+
+## 14\. 实体与方块实体渲染：`EntityRenderersEvent`
+
+`EntityRenderersEvent` 拆成多个子事件：
+
+-   `RegisterLayerDefinitions`
+    
+-   `RegisterRenderers`
+    
+-   `AddLayers`
+    
+-   `CreateSkullModels`
+    
+
+### 14.1 注册实体渲染器
+
+```java
+@SubscribeEvent
+public static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {
+    event.registerEntityRenderer(MyEntities.MY_ENTITY.get(), MyEntityRenderer::new);
+    event.registerBlockEntityRenderer(MyBlockEntities.MY_BE.get(), MyBERenderer::new);
+}
+```
+
+对应 API 定义见 `registerEntityRenderer` 与 `registerBlockEntityRenderer`。
+
+### 14.2 添加 layer 的方法论
+
+在 `AddLayers` 里做‘给已有 renderer 打补丁层’，而不是重复注册 renderer 本体。
+
+* * *
+
+## 15\. 屏幕与 HUD：`RenderGuiEvent`、`RenderGuiLayerEvent`、`IItemDecorator`
+
+### 15.1 HUD 总前后钩子
+
+`RenderGuiEvent.Pre` 可取消。 `RenderGuiEvent.Post` 不可取消。
+
+### 15.2 单个 GUI layer 钩子
+
+`RenderGuiLayerEvent` 带 layer 名和对象。
+
+### 15.3 物品装饰渲染
+
+`RegisterItemDecorationsEvent` 注册 `IItemDecorator`。
+
+`ItemDecoratorHandler` 展示了状态备份与恢复：
+
+-   `RenderSystem.backupGlState`
+    
+-   执行装饰
+    
+-   `RenderSystem.restoreGlState`
+    
+
+方法论：你写 GUI 装饰时，最怕“状态污染”，官方实现就是最好的防线模板。
+
+* * *
+
+## 16\. 视口与镜头：`ViewportEvent`（雾/FOV/相机角）
+
+`ViewportEvent` 提供四组能力：
+
+-   `RenderFog`
+    
+-   `ComputeFogColor`
+    
+-   `ComputeCameraAngles`
+    
+-   `ComputeFov`
+    
+
+### 16.1 雾渲染可取消
+
+`RenderFog` 需要 cancel 才会应用新的近远平面。
+
+### 16.2 相机 roll 的入口
+
+你可通过 `setRoll` 做倾斜镜头效果。
+
+### 16.3 FOV 改造
+
+`ComputeFov.setFOV` 是最稳定入口，比硬改渲染器局部变量更可维护。
+
+* * *
+
+## 17\. 从源码抽象出的渲染方法论（可复用工作流）
+
+这里给你一套能长期复用的 10 步工作流：
+
+1.  定义需求（对象、空间、生命周期）
+    
+2.  选阶段（RenderLevelStage/HUD/SectionBuild/EntityRender）
+    
+3.  选 RenderType（格式、透明、输出目标）
+    
+4.  选数据入口（静态缓存 / ModelData / 实时计算）
+    
+5.  划线程边界（主线程抓快照，工作线程只消费）
+    
+6.  写最小可见版本（先一个 quad）
+    
+7.  补齐光照与法线（packedLight/normal）
+    
+8.  补齐排序与透明策略（sortOnUpload / fabulous target）
+    
+9.  做状态保护（push/pop + GL state backup）
+    
+10.  做压测与剖析（批次数、重建频率、显存占用）
+     
+
+每一步都能在本文对应章节找到源码锚点。
+
+* * *
+
+## 18\. 大量代码模板（按场景直接套）
+
+### 18.1 模板：世界空间调试线框
+
+```java
+public final class Template1 {
+    // 事件入口: RenderLevelStageEvent.Stage.AFTER_ENTITIES
+    // 核心 API: RenderType.lines()
+    public static void setup() {
+        // 1) 校验阶段
+        // 2) 准备矩阵
+        // 3) 获取缓冲
+        // 4) 写入顶点
+        // 5) 收尾状态
+    }
+}
+```
+
+方法论检查项：
+
+-   时机正确
+    
+-   顶点完整
+    
+-   线程安全
+    
+-   状态不污染
+    
+
+### 18.2 模板：半透明体积特效
+
+```java
+public final class Template2 {
+    // 事件入口: RenderLevelStageEvent.Stage.AFTER_PARTICLES
+    // 核心 API: NeoForgeRenderTypes.getTranslucentParticlesTarget(...)
+    public static void setup() {
+        // 1) 校验阶段
+        // 2) 准备矩阵
+        // 3) 获取缓冲
+        // 4) 写入顶点
+        // 5) 收尾状态
+    }
+}
+```
+
+方法论检查项：
+
+-   时机正确
+    
+-   顶点完整
+    
+-   线程安全
+    
+-   状态不污染
+    
+
+### 18.3 模板：区块静态网格注入
+
+```java
+public final class Template3 {
+    // 事件入口: AddSectionGeometryEvent
+    // 核心 API: RenderType.cutout()
+    public static void setup() {
+        // 1) 校验阶段
+        // 2) 准备矩阵
+        // 3) 获取缓冲
+        // 4) 写入顶点
+        // 5) 收尾状态
+    }
+}
+```
+
+方法论检查项：
+
+-   时机正确
+    
+-   顶点完整
+    
+-   线程安全
+    
+-   状态不污染
+    
+
+### 18.4 模板：物品 GUI 角标
+
+```java
+public final class Template4 {
+    // 事件入口: RegisterItemDecorationsEvent
+    // 核心 API: GuiGraphics
+    public static void setup() {
+        // 1) 校验阶段
+        // 2) 准备矩阵
+        // 3) 获取缓冲
+        // 4) 写入顶点
+        // 5) 收尾状态
+    }
+}
+```
+
+方法论检查项：
+
+-   时机正确
+    
+-   顶点完整
+    
+-   线程安全
+    
+-   状态不污染
+    
+
+### 18.5 模板：雾色渐变
+
+```java
+public final class Template5 {
+    // 事件入口: ViewportEvent.ComputeFogColor
+    // 核心 API: setRed/setGreen/setBlue
+    public static void setup() {
+        // 1) 校验阶段
+        // 2) 准备矩阵
+        // 3) 获取缓冲
+        // 4) 写入顶点
+        // 5) 收尾状态
+    }
+}
+```
+
+方法论检查项：
+
+-   时机正确
+    
+-   顶点完整
+    
+-   线程安全
+    
+-   状态不污染
+    
+
+### 18.6 模板：自定义 FOV 动效
+
+```java
+public final class Template6 {
+    // 事件入口: ViewportEvent.ComputeFov
+    // 核心 API: setFOV
+    public static void setup() {
+        // 1) 校验阶段
+        // 2) 准备矩阵
+        // 3) 获取缓冲
+        // 4) 写入顶点
+        // 5) 收尾状态
+    }
+}
+```
+
+方法论检查项：
+
+-   时机正确
+    
+-   顶点完整
+    
+-   线程安全
+    
+-   状态不污染
+    
+
+### 18.7 模板：自定义 shader 注册
+
+```java
+public final class Template7 {
+    // 事件入口: RegisterShadersEvent
+    // 核心 API: new ShaderInstance(...)
+    public static void setup() {
+        // 1) 校验阶段
+        // 2) 准备矩阵
+        // 3) 获取缓冲
+        // 4) 写入顶点
+        // 5) 收尾状态
+    }
+}
+```
+
+方法论检查项：
+
+-   时机正确
+    
+-   顶点完整
+    
+-   线程安全
+    
+-   状态不污染
+    
+
+### 18.8 模板：模型几何 loader
+
+```java
+public final class Template8 {
+    // 事件入口: ModelEvent.RegisterGeometryLoaders
+    // 核心 API: IGeometryLoader.read(...)
+    public static void setup() {
+        // 1) 校验阶段
+        // 2) 准备矩阵
+        // 3) 获取缓冲
+        // 4) 写入顶点
+        // 5) 收尾状态
+    }
+}
+```
+
+方法论检查项：
+
+-   时机正确
+    
+-   顶点完整
+    
+-   线程安全
+    
+-   状态不污染
+    
+
+### 18.9 模板：动态模型属性
+
+```java
+public final class Template9 {
+    // 事件入口: ModelData
+    // 核心 API: ModelProperty
+    public static void setup() {
+        // 1) 校验阶段
+        // 2) 准备矩阵
+        // 3) 获取缓冲
+        // 4) 写入顶点
+        // 5) 收尾状态
+    }
+}
+```
+
+方法论检查项：
+
+-   时机正确
+    
+-   顶点完整
+    
+-   线程安全
+    
+-   状态不污染
+    
+
+### 18.10 模板：实体渲染器注册
+
+```java
+public final class Template10 {
+    // 事件入口: EntityRenderersEvent.RegisterRenderers
+    // 核心 API: registerEntityRenderer
+    public static void setup() {
+        // 1) 校验阶段
+        // 2) 准备矩阵
+        // 3) 获取缓冲
+        // 4) 写入顶点
+        // 5) 收尾状态
+    }
+}
+```
+
+方法论检查项：
+
+-   时机正确
+    
+-   顶点完整
+    
+-   线程安全
+    
+-   状态不污染
+    
+
+* * *
+
+## 19\. 排错、性能与稳定性清单
+
+### 19.1 现象 -> 层级定位
+
+| 现象 | 最可能层级 | 第一检查点 |
+| --- | --- | --- |
+| 不显示 | 时机层/状态层 | 阶段与 RenderType 是否匹配 |
+| 黑块/紫黑纹理 | 资源层 | 纹理/模型/atlas 是否存在 |
+| 透明错序 | 状态层/排序层 | sortOnUpload 与输出 target |
+| 偶发崩溃 | 线程层 | 是否跨线程访问非安全对象 |
+| 严重掉帧 | 数据层 | 是否每帧重复构网格 |
+
+### 19.2 性能红线
+
+-   每帧创建大量临时对象
+    
+-   在渲染回调中做 IO
+    
+-   在工作线程读主线程结构
+    
+-   忽略 frustum，画看不见的东西
+    
+-   频繁触发 section dirty 重建
+    
+
+### 19.3 线程红线
+
+`RenderSystem.assertOnRenderThread()` 不是装饰，它是边界线。
+
+当你不确定线程时，先记录、后回放（`recordRenderCall`）。
+
+* * *
+
+## 结束语
+
+当你把本文流程跑熟后，你会发现渲染开发不再是“玄学调参”，而是“有证据的工程决策”。
+
+建议下一步：把你想做的效果先写成“五层定位表”，再结合训练卡开始敲第一行代码。

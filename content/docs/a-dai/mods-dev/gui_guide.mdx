@@ -1,0 +1,1633 @@
+---
+title: "NeoForge GUI 开发完全指南"
+author: "阿呆皮革厂"
+license: "CC BY-NC-SA 4.0"
+---
+* * *
+
+## 目录
+
+1.  [先建立正确认知：GUI 不是贴图，而是客户端-服务端协议](#1-%E5%85%88%E5%BB%BA%E7%AB%8B%E6%AD%A3%E7%A1%AE%E8%AE%A4%E7%9F%A5gui-%E4%B8%8D%E6%98%AF%E8%B4%B4%E5%9B%BE%E8%80%8C%E6%98%AF%E5%AE%A2%E6%88%B7%E7%AB%AF-%E6%9C%8D%E5%8A%A1%E7%AB%AF%E5%8D%8F%E8%AE%AE)
+    
+2.  [源码总览：GUI 体系的关键类与职责](#2-%E6%BA%90%E7%A0%81%E6%80%BB%E8%A7%88gui-%E4%BD%93%E7%B3%BB%E7%9A%84%E5%85%B3%E9%94%AE%E7%B1%BB%E4%B8%8E%E8%81%8C%E8%B4%A3)
+    
+3.  [核心链路：一次 GUI 打开的完整生命周期](#3-%E6%A0%B8%E5%BF%83%E9%93%BE%E8%B7%AF%E4%B8%80%E6%AC%A1-gui-%E6%89%93%E5%BC%80%E7%9A%84%E5%AE%8C%E6%95%B4%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F)
+    
+4.  [方法论：从 0 到 1 的 GUI 七步法](#4-%E6%96%B9%E6%B3%95%E8%AE%BA%E4%BB%8E-0-%E5%88%B0-1-%E7%9A%84-gui-%E4%B8%83%E6%AD%A5%E6%B3%95)
+    
+5.  [实战 A：标准“带格子”GUI（3x3 机器）](#5-%E5%AE%9E%E6%88%98-a%E6%A0%87%E5%87%86%E5%B8%A6%E6%A0%BC%E5%AD%90gui3x3-%E6%9C%BA%E5%99%A8)
+    
+6.  [实战 B：自定义“特殊”GUI（按钮面板 + 自定义绘制）](#6-%E5%AE%9E%E6%88%98-b%E8%87%AA%E5%AE%9A%E4%B9%89%E7%89%B9%E6%AE%8Agui%E6%8C%89%E9%92%AE%E9%9D%A2%E6%9D%BF--%E8%87%AA%E5%AE%9A%E4%B9%89%E7%BB%98%E5%88%B6)
+    
+7.  [同步机制深挖：为什么你的进度条会不同步](#7-%E5%90%8C%E6%AD%A5%E6%9C%BA%E5%88%B6%E6%B7%B1%E6%8C%96%E4%B8%BA%E4%BB%80%E4%B9%88%E4%BD%A0%E7%9A%84%E8%BF%9B%E5%BA%A6%E6%9D%A1%E4%BC%9A%E4%B8%8D%E5%90%8C%E6%AD%A5)
+    
+8.  [交互机制深挖：点击、拖拽、Shift 快速移动到底发生了什么](#8-%E4%BA%A4%E4%BA%92%E6%9C%BA%E5%88%B6%E6%B7%B1%E6%8C%96%E7%82%B9%E5%87%BB%E6%8B%96%E6%8B%BDshift-%E5%BF%AB%E9%80%9F%E7%A7%BB%E5%8A%A8%E5%88%B0%E5%BA%95%E5%8F%91%E7%94%9F%E4%BA%86%E4%BB%80%E4%B9%88)
+    
+9.  [常见坑位与排错清单（实战必看）](#9-%E5%B8%B8%E8%A7%81%E5%9D%91%E4%BD%8D%E4%B8%8E%E6%8E%92%E9%94%99%E6%B8%85%E5%8D%95%E5%AE%9E%E6%88%98%E5%BF%85%E7%9C%8B)
+    
+10.  [进阶扩展：不改原版 Screen 也能插入渲染层](#10-%E8%BF%9B%E9%98%B6%E6%89%A9%E5%B1%95%E4%B8%8D%E6%94%B9%E5%8E%9F%E7%89%88-screen-%E4%B9%9F%E8%83%BD%E6%8F%92%E5%85%A5%E6%B8%B2%E6%9F%93%E5%B1%82)
+     
+11.  [最终方法论总结（可复用到任意 GUI）](#11-%E6%9C%80%E7%BB%88%E6%96%B9%E6%B3%95%E8%AE%BA%E6%80%BB%E7%BB%93%E5%8F%AF%E5%A4%8D%E7%94%A8%E5%88%B0%E4%BB%BB%E6%84%8F-gui)
+     
+12.  [底层协议深挖：容器一致性是如何被“硬保证”的](#12-%E5%BA%95%E5%B1%82%E5%8D%8F%E8%AE%AE%E6%B7%B1%E6%8C%96%E5%AE%B9%E5%99%A8%E4%B8%80%E8%87%B4%E6%80%A7%E6%98%AF%E5%A6%82%E4%BD%95%E8%A2%AB%E7%A1%AC%E4%BF%9D%E8%AF%81%E7%9A%84)
+     
+13.  `AbstractContainerMenu#doClick` [状态机拆解（硬核）](#13-abstractcontainermenudoclick-%E7%8A%B6%E6%80%81%E6%9C%BA%E6%8B%86%E8%A7%A3%E7%A1%AC%E6%A0%B8)
+     
+14.  `AbstractContainerScreen` [输入系统拆解（鼠标/触屏/双击）](#14-abstractcontainerscreen-%E8%BE%93%E5%85%A5%E7%B3%BB%E7%BB%9F%E6%8B%86%E8%A7%A3%E9%BC%A0%E6%A0%87%E8%A7%A6%E5%B1%8F%E5%8F%8C%E5%87%BB)
+     
+15.  [槽位系统进阶：不仅是](#15-%E6%A7%BD%E4%BD%8D%E7%B3%BB%E7%BB%9F%E8%BF%9B%E9%98%B6%E4%B8%8D%E4%BB%85%E6%98%AF-new-slot) `new Slot(...)`
+     
+16.  [“带格子 GUI”完整工程模板（含 BlockEntity 侧思路）](#16-%E5%B8%A6%E6%A0%BC%E5%AD%90-gui%E5%AE%8C%E6%95%B4%E5%B7%A5%E7%A8%8B%E6%A8%A1%E6%9D%BF%E5%90%AB-blockentity-%E4%BE%A7%E6%80%9D%E8%B7%AF)
+     
+17.  [自定义特殊 GUI：多按钮、多模式、多层渲染的工程写法](#17-%E8%87%AA%E5%AE%9A%E4%B9%89%E7%89%B9%E6%AE%8A-gui%E5%A4%9A%E6%8C%89%E9%92%AE%E5%A4%9A%E6%A8%A1%E5%BC%8F%E5%A4%9A%E5%B1%82%E6%B8%B2%E6%9F%93%E7%9A%84%E5%B7%A5%E7%A8%8B%E5%86%99%E6%B3%95)
+     
+18.  [网络与同步的工程策略（高并发/高频更新）](#18-%E7%BD%91%E7%BB%9C%E4%B8%8E%E5%90%8C%E6%AD%A5%E7%9A%84%E5%B7%A5%E7%A8%8B%E7%AD%96%E7%95%A5%E9%AB%98%E5%B9%B6%E5%8F%91%E9%AB%98%E9%A2%91%E6%9B%B4%E6%96%B0)
+     
+19.  [可维护性设计：把 GUI 当成“协议 + 视图”项目](#19-%E5%8F%AF%E7%BB%B4%E6%8A%A4%E6%80%A7%E8%AE%BE%E8%AE%A1%E6%8A%8A-gui-%E5%BD%93%E6%88%90%E5%8D%8F%E8%AE%AE--%E8%A7%86%E5%9B%BE%E9%A1%B9%E7%9B%AE)
+     
+20.  [更底层的源码映射清单（按问题反查）](#20-%E6%9B%B4%E5%BA%95%E5%B1%82%E7%9A%84%E6%BA%90%E7%A0%81%E6%98%A0%E5%B0%84%E6%B8%85%E5%8D%95%E6%8C%89%E9%97%AE%E9%A2%98%E5%8F%8D%E6%9F%A5)
+     
+21.  [生产级实践：两套可直接复用的代码骨架](#21-%E7%94%9F%E4%BA%A7%E7%BA%A7%E5%AE%9E%E8%B7%B5%E4%B8%A4%E5%A5%97%E5%8F%AF%E7%9B%B4%E6%8E%A5%E5%A4%8D%E7%94%A8%E7%9A%84%E4%BB%A3%E7%A0%81%E9%AA%A8%E6%9E%B6)
+     
+22.  [零基础开发者的“落地路线图”](#22-%E9%9B%B6%E5%9F%BA%E7%A1%80%E5%BC%80%E5%8F%91%E8%80%85%E7%9A%84%E8%90%BD%E5%9C%B0%E8%B7%AF%E7%BA%BF%E5%9B%BE)
+     
+23.  [高频 FAQ（底层版）](#23-%E9%AB%98%E9%A2%91-faq%E5%BA%95%E5%B1%82%E7%89%88)
+     
+24.  [结尾：把 GUI 当“系统工程”而不是“UI 小功能”](#24-%E7%BB%93%E5%B0%BE%E6%8A%8A-gui-%E5%BD%93%E7%B3%BB%E7%BB%9F%E5%B7%A5%E7%A8%8B%E8%80%8C%E4%B8%8D%E6%98%AFui-%E5%B0%8F%E5%8A%9F%E8%83%BD)
+     
+
+* * *
+
+## 1\. 先建立正确认知：GUI 不是贴图，而是客户端-服务端协议
+
+很多新手以为 GUI = 画背景图 + 按钮。
+
+这是最容易踩坑的认知。
+
+在 NeoForge 里，容器型 GUI（背包、机器、工作台这类）本质是四层协作：
+
+1.  **服务端状态层**：真实库存、配方、能量、进度存在服务端。
+    
+2.  **菜单同步层**：`AbstractContainerMenu` 负责槽位与数据同步。
+    
+3.  **网络协议层**：打开界面、点击槽位、同步数据都靠数据包。
+    
+4.  **客户端渲染层**：`AbstractContainerScreen` 负责绘制与输入。
+    
+
+**结论**：你写 GUI，不是“画图”，而是“设计一个可同步的交互协议 + 一层可视化外壳”。
+
+* * *
+
+## 2\. 源码总览：GUI 体系的关键类与职责
+
+先掌握核心类，不要急着写代码。
+
+### 2.1 菜单与槽位核心
+
+-   `AbstractContainerMenu`：菜单基类，处理槽位列表、数据槽、点击逻辑、同步。
+    
+-   `Slot`：单个槽位规则（能否放入、能否取出、最大堆叠等）。
+    
+-   `DataSlot`：整型同步单元。
+    
+-   `ContainerData`：整型数组接口。
+    
+-   `SimpleContainerData`：`ContainerData` 的简单实现。
+    
+
+### 2.2 菜单类型与构建
+
+-   `MenuType`：菜单类型（注册入口）。
+    
+-   `IMenuTypeExtension.create()`：NeoForge 推荐创建方式，支持附加数据。
+    
+-   `IContainerFactory`：客户端创建菜单时可读取 `extraData`。
+    
+
+### 2.3 打开 GUI 的服务端入口
+
+-   `MenuProvider`：提供菜单实例与标题。
+    
+-   `SimpleMenuProvider`：最常用 provider。
+    
+-   `ServerPlayer.openMenu()`：真正发包打开界面的地方。
+    
+
+### 2.4 客户端 Screen 体系
+
+-   `Screen`：所有屏幕基类。
+    
+-   `AbstractContainerScreen`：容器屏幕基类，内置槽位绘制与交互。
+    
+-   `MenuScreens`：通过菜单类型找到对应 Screen 构造器。
+    
+-   `RegisterMenuScreensEvent.register()`：注册菜单到屏幕映射。
+    
+
+* * *
+
+## 3\. 核心链路：一次 GUI 打开的完整生命周期
+
+下面这条链路是“理解一切问题”的总钥匙：
+
+### 3.1 服务端请求打开
+
+服务端调用 `ServerPlayer.openMenu()`，然后发 `ClientboundOpenScreenPacket`。
+
+### 3.2 客户端收到打开包
+
+客户端在 `ClientPacketListener.handleOpenScreen()` 里调用 `MenuScreens.create()`，根据 `MenuType` 构建 Screen。
+
+### 3.3 初始数据同步
+
+服务端通过 `ContainerSynchronizer.sendInitialData()` 推送全部槽位与数据。
+
+### 3.4 后续增量同步
+
+-   槽位变化：`sendSlotChange()`
+    
+-   carried 变化：`sendCarriedChange()`
+    
+-   数据槽变化：`sendDataChange()`
+    
+
+### 3.5 客户端点击 -> 服务端处理
+
+客户端点击后会发 `ServerboundContainerClickPacket`，服务端在 `ServerGamePacketListenerImpl.handleContainerClick()` 里执行 `AbstractContainerMenu.clicked()`。
+
+**方法论结论**：
+
+-   客户端只负责“输入与展示”；
+    
+-   服务端负责“合法性与真实状态”；
+    
+-   任何“客户端直接改库存”的写法都是错的。
+    
+
+* * *
+
+## 4\. 方法论：从 0 到 1 的 GUI 七步法
+
+这是建议你每次都遵循的流程：
+
+1.  先画**状态流图**（谁拥有状态？谁只显示？）。
+    
+2.  定义 `MenuType` 与 `extraData`（如 `BlockPos`）。
+    
+3.  写 `Menu`（槽位布局、`quickMoveStack`、`stillValid`、`DataSlot`）。
+    
+4.  写 `MenuProvider` + 服务端 `openMenu`。
+    
+5.  注册 `Screen` 映射（客户端 mod bus）。
+    
+6.  写 `Screen`（只读菜单状态，渲染与按钮输入）。
+    
+7.  最后做“异常路径测试”（关界面、越界点击、Shift 移动、断线）。
+    
+
+你会发现，这套步骤在箱子、熔炉、信标、工作台都成立。
+
+* * *
+
+## 5\. 实战 A：标准“带格子”GUI（3x3 机器）
+
+本节给一个**通用模板**：
+
+-   上半部分：机器 3x3 槽位；
+    
+-   下半部分：玩家背包；
+    
+-   右侧：进度条；
+    
+-   支持 Shift 快速转移。
+    
+
+### 5.1 推荐文件结构
+
+```text
+src/main/java/com/example/mymod/
+├── menu/
+│   ├── ModMenuTypes.java
+│   └── CrystalMachineMenu.java
+├── client/screen/
+│   └── CrystalMachineScreen.java
+└── block/
+    └── CrystalMachineBlock.java
+```
+
+### 5.2 注册 `MenuType`
+
+```java
+package com.example.mymod.menu;
+
+import net.minecraft.core.registries.Registries;
+import net.minecraft.world.inventory.MenuType;
+import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
+import net.neoforged.neoforge.network.IContainerFactory;
+import net.neoforged.neoforge.registries.DeferredHolder;
+import net.neoforged.neoforge.registries.DeferredRegister;
+
+public final class ModMenuTypes {
+    public static final DeferredRegister<MenuType<?>> MENUS =
+        DeferredRegister.create(Registries.MENU, "mymod");
+
+    public static final DeferredHolder<MenuType<?>, MenuType<CrystalMachineMenu>> CRYSTAL_MACHINE =
+        MENUS.register("crystal_machine", () -> IMenuTypeExtension.create((IContainerFactory<CrystalMachineMenu>) CrystalMachineMenu::new));
+}
+```
+
+为什么这样写：
+
+-   `IMenuTypeExtension.create()` 明确支持 `IContainerFactory`。
+    
+-   `MenuType.create(..., extraData)` 会把 `extraData` 传入菜单构造。
+    
+
+### 5.3 编写 `Menu`（重点）
+
+```java
+package com.example.mymod.menu;
+
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.world.Container;
+import net.minecraft.world.SimpleContainer;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.ContainerData;
+import net.minecraft.world.inventory.DataSlot;
+import net.minecraft.world.inventory.MenuType;
+import net.minecraft.world.inventory.SimpleContainerData;
+import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.ItemStack;
+
+public class CrystalMachineMenu extends AbstractContainerMenu {
+    private static final int MACHINE_SLOT_COUNT = 9;
+    private static final int PLAYER_INV_START = 9;
+    private static final int PLAYER_INV_END = 36;
+    private static final int HOTBAR_START = 36;
+    private static final int HOTBAR_END = 45;
+
+    private final Container machineContainer;
+    private final ContainerData data;
+    private final BlockPos pos;
+
+    public CrystalMachineMenu(int containerId, Inventory playerInv, RegistryFriendlyByteBuf extraData) {
+        this(containerId, playerInv, new SimpleContainer(9), new SimpleContainerData(2), extraData.readBlockPos());
+    }
+
+    public CrystalMachineMenu(int containerId, Inventory playerInv, Container machineContainer, ContainerData data, BlockPos pos) {
+        super((MenuType<?>) ModMenuTypes.CRYSTAL_MACHINE.get(), containerId);
+        this.machineContainer = machineContainer;
+        this.data = data;
+        this.pos = pos;
+
+        checkContainerSize(machineContainer, 9);
+        checkContainerDataCount(data, 2);
+
+        // 机器 3x3
+        for (int row = 0; row < 3; row++) {
+            for (int col = 0; col < 3; col++) {
+                this.addSlot(new Slot(machineContainer, col + row * 3, 62 + col * 18, 17 + row * 18));
+            }
+        }
+
+        // 玩家背包 3x9
+        for (int row = 0; row < 3; row++) {
+            for (int col = 0; col < 9; col++) {
+                this.addSlot(new Slot(playerInv, col + row * 9 + 9, 8 + col * 18, 84 + row * 18));
+            }
+        }
+
+        // 快捷栏
+        for (int col = 0; col < 9; col++) {
+            this.addSlot(new Slot(playerInv, col, 8 + col * 18, 142));
+        }
+
+        this.addDataSlots(data);
+        this.addDataSlot(DataSlot.standalone()); // 示例：本地临时整型槽
+    }
+
+    @Override
+    public boolean stillValid(Player player) {
+        return this.machineContainer.stillValid(player);
+    }
+
+    @Override
+    public ItemStack quickMoveStack(Player player, int index) {
+        ItemStack result = ItemStack.EMPTY;
+        Slot slot = this.slots.get(index);
+        if (slot != null && slot.hasItem()) {
+            ItemStack source = slot.getItem();
+            result = source.copy();
+
+            if (index < MACHINE_SLOT_COUNT) {
+                if (!this.moveItemStackTo(source, PLAYER_INV_START, HOTBAR_END, true)) {
+                    return ItemStack.EMPTY;
+                }
+            } else if (!this.moveItemStackTo(source, 0, MACHINE_SLOT_COUNT, false)) {
+                return ItemStack.EMPTY;
+            }
+
+            if (source.isEmpty()) {
+                slot.setByPlayer(ItemStack.EMPTY);
+            } else {
+                slot.setChanged();
+            }
+        }
+        return result;
+    }
+
+    public int getProgress() {
+        return this.data.get(0);
+    }
+
+    public int getMaxProgress() {
+        return this.data.get(1);
+    }
+
+    public BlockPos getBlockPos() {
+        return this.pos;
+    }
+}
+```
+
+这段代码背后的源码依据：
+
+-   添加槽位：`addSlot()`
+    
+-   数据同步槽：`addDataSlots()`
+    
+-   Shift 合并核心：`moveItemStackTo()`
+    
+-   有效性校验：`stillValid()`
+    
+
+### 5.4 服务端打开 GUI（含 `BlockPos`）
+
+```java
+// 伪代码：在方块 use 中（服务端）
+player.openMenu(
+    new net.minecraft.world.SimpleMenuProvider(
+        (containerId, playerInv, p) -> new CrystalMachineMenu(containerId, playerInv, machineContainer, data, pos),
+        net.minecraft.network.chat.Component.translatable("menu.mymod.crystal_machine")
+    ),
+    buf -> buf.writeBlockPos(pos)
+);
+```
+
+打开逻辑对应：`ServerPlayer.openMenu(..., extraDataWriter)`。
+
+### 5.5 客户端注册 Screen
+
+```java
+package com.example.mymod.client;
+
+import com.example.mymod.client.screen.CrystalMachineScreen;
+import com.example.mymod.menu.ModMenuTypes;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
+
+@EventBusSubscriber(modid = "mymod", bus = EventBusSubscriber.Bus.MOD)
+public final class ClientScreens {
+    @SubscribeEvent
+    public static void onRegisterScreens(RegisterMenuScreensEvent event) {
+        event.register(ModMenuTypes.CRYSTAL_MACHINE.get(), CrystalMachineScreen::new);
+    }
+}
+```
+
+注册 API 依据：`RegisterMenuScreensEvent.register()`。
+
+### 5.6 编写 `Screen`
+
+```java
+package com.example.mymod.client.screen;
+
+import com.example.mymod.menu.CrystalMachineMenu;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Inventory;
+
+public class CrystalMachineScreen extends AbstractContainerScreen<CrystalMachineMenu> {
+    private static final ResourceLocation TEX = ResourceLocation.fromNamespaceAndPath("mymod", "textures/gui/crystal_machine.png");
+
+    public CrystalMachineScreen(CrystalMachineMenu menu, Inventory playerInv, Component title) {
+        super(menu, playerInv, title);
+        this.imageWidth = 176;
+        this.imageHeight = 166;
+    }
+
+    @Override
+    protected void renderBg(GuiGraphics gg, float partialTick, int mouseX, int mouseY) {
+        int x = this.leftPos;
+        int y = this.topPos;
+        gg.blit(TEX, x, y, 0, 0, this.imageWidth, this.imageHeight);
+
+        int progress = this.menu.getProgress();
+        int max = Math.max(1, this.menu.getMaxProgress());
+        int width = (int) (24.0f * progress / max);
+        gg.blit(TEX, x + 79, y + 34, 176, 0, width, 16);
+    }
+
+    @Override
+    public void render(GuiGraphics gg, int mouseX, int mouseY, float partialTick) {
+        super.render(gg, mouseX, mouseY, partialTick);
+        this.renderTooltip(gg, mouseX, mouseY);
+    }
+}
+```
+
+渲染生命周期依据：`AbstractContainerScreen.render()` 与 `renderBg()`。
+
+* * *
+
+## 6\. 实战 B：自定义“特殊”GUI（按钮面板 + 自定义绘制）
+
+很多人会做格子 GUI，不会做“特殊交互 GUI”。
+
+这里给你一套可扩展范式：
+
+-   保留容器同步能力；
+    
+-   增加按钮模式切换；
+    
+-   加入自定义几何渲染（不是只贴图）。
+    
+
+### 6.1 参考原版“特殊 GUI”设计
+
+最值得参考的是信标：
+
+-   菜单：`BeaconMenu`
+    
+-   屏幕：`BeaconScreen`
+    
+
+你会看到它既有槽位，也有大量按钮组件与状态联动。
+
+### 6.2 服务器按钮处理（关键思想）
+
+做法：
+
+1.  客户端按钮点击调用 `handleInventoryButtonClick()`。
+    
+2.  服务端收到按钮包后调用菜单的 `clickMenuButton` 处理。
+    
+3.  菜单修改数据后 `broadcastChanges` 自动同步。
+    
+
+### 6.3 自定义菜单示例（特殊面板）
+
+```java
+public class CrystalCoreMenu extends AbstractContainerMenu {
+    private final ContainerData data; // 0=mode,1=energy,2=maxEnergy
+
+    public CrystalCoreMenu(int id, Inventory inv, ContainerData data) {
+        super((MenuType<?>) ModMenuTypes.CRYSTAL_CORE.get(), id);
+        this.data = data;
+        checkContainerDataCount(data, 3);
+
+        // 仅 1 个“核心槽位”
+        this.addSlot(new Slot(inv, 0, 80, 44));
+
+        // 玩家背包可选，这里省略
+        this.addDataSlots(data);
+    }
+
+    public int getMode() {
+        return this.data.get(0);
+    }
+
+    public int getEnergy() {
+        return this.data.get(1);
+    }
+
+    public int getMaxEnergy() {
+        return this.data.get(2);
+    }
+
+    @Override
+    public boolean clickMenuButton(Player player, int id) {
+        if (id == 0) {
+            int mode = (data.get(0) + 1) % 3;
+            data.set(0, mode);
+            this.broadcastChanges();
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public ItemStack quickMoveStack(Player player, int index) {
+        return ItemStack.EMPTY;
+    }
+
+    @Override
+    public boolean stillValid(Player player) {
+        return true;
+    }
+}
+```
+
+按钮服务器入口方法定义见：`clickMenuButton()`。
+
+### 6.4 自定义 Screen（按钮 + 自绘）
+
+```java
+public class CrystalCoreScreen extends AbstractContainerScreen<CrystalCoreMenu> {
+    public CrystalCoreScreen(CrystalCoreMenu menu, Inventory inv, Component title) {
+        super(menu, inv, title);
+        this.imageWidth = 220;
+        this.imageHeight = 180;
+    }
+
+    @Override
+    protected void init() {
+        super.init();
+        this.addRenderableWidget(net.minecraft.client.gui.components.Button
+            .builder(Component.literal("切换模式"), b -> {
+                if (this.minecraft != null && this.minecraft.gameMode != null) {
+                    this.minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId, 0);
+                }
+            })
+            .bounds(this.leftPos + 140, this.topPos + 20, 70, 20)
+            .build());
+    }
+
+    @Override
+    protected void renderBg(GuiGraphics gg, float partialTick, int mouseX, int mouseY) {
+        int x = this.leftPos;
+        int y = this.topPos;
+
+        // 1) 先画底板
+        gg.fill(x, y, x + this.imageWidth, y + this.imageHeight, 0xFF1F1F1F);
+
+        // 2) 画能量条（自定义图形）
+        int energy = this.menu.getEnergy();
+        int max = Math.max(1, this.menu.getMaxEnergy());
+        int h = (int) (80.0f * energy / max);
+        gg.fill(x + 20, y + 120 - h, x + 32, y + 120, 0xFF00E5FF);
+
+        // 3) 画边框
+        gg.fill(x + 19, y + 39, x + 33, y + 121, 0x55FFFFFF);
+    }
+}
+```
+
+按钮体系可参考：`Button` 与 `AbstractWidget`。
+
+### 6.5 什么时候不用 `AbstractContainerScreen`
+
+如果你的 GUI 完全不需要服务端库存与同步（纯客户端配置面板），可直接继承 `Screen`。
+
+但只要涉及物品、方块实体状态、可被作弊影响的逻辑，优先容器体系。
+
+* * *
+
+## 7\. 同步机制深挖：为什么你的进度条会不同步
+
+### 7.1 同步触发点
+
+菜单每 tick（或状态变化时）调用 `broadcastChanges()`，内部会：
+
+-   比较槽位旧值与新值；
+    
+-   比较 `DataSlot` 旧值与新值（`checkAndClearUpdateFlag()`）；
+    
+-   只发送差异。
+    
+
+### 7.2 `ContainerData` 与 `DataSlot` 怎么选
+
+-   你有“多个关联 int 状态”（进度、最大值、模式等）时：用 `ContainerData + addDataSlots`。
+    
+-   你只有“单个临时 int”时：可用 `DataSlot.standalone()`。
+    
+
+### 7.3 为什么有时 int 会溢出
+
+经典包 `ClientboundContainerSetDataPacket` 的字段写入是 short（`writeShort`）。
+
+如果你同步值非常大（比如能量到百万），建议拆分高低位，或自定义网络同步策略。
+
+* * *
+
+## 8\. 交互机制深挖：点击、拖拽、Shift 快速移动到底发生了什么
+
+### 8.1 点击主流程
+
+菜单点击总入口：`clicked()` -> `doClick`。
+
+它统一处理：
+
+-   普通点击（左右键）
+    
+-   Shift 快速移动
+    
+-   数字键交换
+    
+-   Q 丢弃
+    
+-   双击聚合
+    
+-   拖拽分发（QUICK\_CRAFT）
+    
+
+### 8.2 屏幕侧输入处理
+
+容器屏幕内置了复杂输入逻辑：
+
+-   `mouseClicked()`
+    
+-   `mouseDragged()`
+    
+-   `mouseReleased()`
+    
+
+所以你通常不需要自己重写完整鼠标行为，只需关注业务按钮与 `renderBg`。
+
+### 8.3 `quickMoveStack` 的正确写法
+
+原则：
+
+1.  先定义索引常量（机器区、背包区、快捷栏区）。
+    
+2.  按“来源区 -> 目标区”写 if 分支。
+    
+3.  每次 `moveItemStackTo` 失败要 `return ItemStack.EMPTY`。
+    
+4.  修改后记得 `slot.setChanged()` 或清空。
+    
+
+参考实现：`ChestMenu.quickMoveStack()`、`DispenserMenu.quickMoveStack()`、`AbstractFurnaceMenu.quickMoveStack()`。
+
+* * *
+
+## 9\. 常见坑位与排错清单（实战必看）
+
+### 9.1 “界面能开但不显示 Screen”
+
+检查点：
+
+-   是否在客户端注册了 `RegisterMenuScreensEvent`。
+    
+-   `MenuType` 是否与 `event.register(type, screenCtor)` 一一对应。
+    
+
+### 9.2 “槽位能看见但点不动”
+
+检查点：
+
+-   `stillValid` 是否返回 false。
+    
+-   `Slot.mayPickup()` / `Slot.mayPlace()` 是否限制过严。
+    
+-   是否错误覆盖 `clicked` 流程。
+    
+
+### 9.3 “Shift 移动乱飞”
+
+检查点：
+
+-   索引范围是否写错（尤其 end 是排他）。
+    
+-   `moveItemStackTo` 的 `reverseDirection` 是否符合目标区。
+    
+
+### 9.4 “数据不同步或闪烁”
+
+检查点：
+
+-   业务状态是否真的写入了 `ContainerData`。
+    
+-   菜单是否调用了 `addDataSlots(data)`。
+    
+-   客户端渲染是否直接读了本地变量而不是菜单同步值。
+    
+
+### 9.5 “打开 GUI 后立刻关闭”
+
+检查点：
+
+-   `stillValid` 距离校验是否正确。
+    
+-   方块被替换/实体失效导致校验失败。
+    
+-   对方块 GUI 推荐结合 `ContainerLevelAccess` 与 `stillValid(access, player, block)`。
+    
+
+* * *
+
+## 10\. 进阶扩展：不改原版 Screen 也能插入渲染层
+
+NeoForge 在容器渲染阶段暴露了事件：
+
+-   `ContainerScreenEvent.Render.Background`
+    
+-   `ContainerScreenEvent.Render.Foreground`
+    
+
+这意味着你可以：
+
+-   给任意容器叠加覆盖层；
+    
+-   做调试辅助绘制；
+    
+-   做跨模组 UI 增强，而不必硬改别人的 Screen 类。
+    
+
+也能解释为什么 `AbstractContainerScreen.render()` 不是简单调用 `super.render`，而是插入事件分发。
+
+* * *
+
+## 11\. 最终方法论总结（可复用到任意 GUI）
+
+把 GUI 开发抽象成一句话：
+
+**服务端定义真实状态 + 菜单定义可同步状态与可交互规则 + 客户端只做可视化和输入转发。**
+
+### 11.1 设计层面
+
+-   先画“状态所有权图”：变量归谁（Server/Client/Menu）。
+    
+-   先定“最小可同步状态集”：别把无关数据塞进 `ContainerData`。
+    
+-   先复用 Vanilla 模板：箱子、发射器、熔炉、信标是最好的设计样本。
+    
+
+### 11.2 编码层面
+
+-   `Menu` 先写完再写 `Screen`。
+    
+-   `quickMoveStack` 常量先行，杜绝魔法数字。
+    
+-   所有“可作弊逻辑”必须在服务端校验。
+    
+
+### 11.3 调试层面
+
+-   先验证打开链路（open packet -> menu -> screen）。
+    
+-   再验证槽位交互（普通点、Shift、拖拽、双击）。
+    
+-   最后验证断线、关闭、方块移除等异常路径。
+    
+
+* * *
+
+## 附：你接下来该怎么练（建议顺序）
+
+1.  先抄一份 3x3 机器 GUI（本教程实战 A）。
+    
+2.  再做“1 槽位 + 2 按钮 + 1 进度条”的特殊 GUI（本教程实战 B）。
+    
+3.  再加一层 `ContainerScreenEvent` 覆盖渲染。
+    
+4.  最后尝试做“多页签 GUI”（每个页签一组不同按钮逻辑）。
+    
+
+只要你严格按“状态归属 -> 同步设计 -> 渲染输入”这条主线推进，GUI 将从“最难模块”变成“可工程化复用模块”。
+
+* * *
+
+## 12\. 底层协议深挖：容器一致性是如何被“硬保证”的
+
+这一章是底层重点。
+
+很多人会问：
+
+-   为什么客户端点了物品，有时会“弹回去”？
+    
+-   为什么偶发“幽灵物品”（看着有，实际上没有）？
+    
+-   为什么服务器能纠正客户端错误状态？
+    
+
+答案都在容器一致性协议里。
+
+### 12.1 客户端并不是“直接改服务端容器”
+
+客户端点击时，先在本地预测执行一遍，然后把点击意图发给服务端。核心路径在 `MultiPlayerGameMode` 内部的点击发送逻辑（你已在前文看到发包点）。
+
+服务端在 `ServerGamePacketListenerImpl.handleContainerClick()` 收包后会做三层校验：
+
+1.  `containerId` 必须匹配当前打开菜单；
+    
+2.  `stillValid` 必须通过；
+    
+3.  槽位索引必须有效（`isValidSlotIndex()`）。
+    
+
+任一失败，服务端不会按客户端想法执行。
+
+### 12.2 `stateId` 的作用：版本戳而不是装饰字段
+
+在 `ServerboundContainerClickPacket` 中有 `stateId`。
+
+服务端会比对：
+
+```java
+boolean flag = packet.getStateId() != this.player.containerMenu.getStateId();
+```
+
+当 `flag=true`，服务端认为“客户端基于过期状态进行了点击”，会走 `broadcastFullState()` 进行全量回灌。
+
+这就是你看到“弹回”的根源：
+
+-   不是 bug；
+    
+-   是协议在修复预测偏差。
+    
+
+### 12.3 `changedSlots` 的作用：客户端提交“我认为变化了哪些槽”
+
+`ServerboundContainerClickPacket` 不只发点击参数，还带 `changedSlots`（映射）与 `carriedItem`。
+
+服务端先执行真实点击逻辑：`AbstractContainerMenu.clicked()`，再把客户端给出的变更写入 remote 视图：
+
+-   `setRemoteSlotNoCopy()`
+    
+-   `setRemoteCarried()`
+    
+
+然后恢复 remote update，再决定是增量广播还是全量广播。
+
+**方法论意义**：
+
+这是典型“客户端预测 + 服务端权威 + 版本对账”模型。你做任何自定义 GUI，都要默认这套模型存在。
+
+### 12.4 为什么要先 `suppressRemoteUpdates()` 再执行点击
+
+服务端处理点击时会：
+
+1.  `suppressRemoteUpdates()`
+    
+2.  执行点击
+    
+3.  写入 remote 预测结果
+    
+4.  `resumeRemoteUpdates()`
+    
+5.  广播
+    
+
+如果不 suppress，中间过程就可能把“半成品状态”同步给客户端，造成闪烁与错位。
+
+### 12.5 为什么 `broadcastChanges()` 通常够用，偶尔必须 `broadcastFullState()`
+
+-   `broadcastChanges`：差量同步，性能好。
+    
+-   `broadcastFullState`：全量同步，纠错强。
+    
+
+实战策略：
+
+-   正常 Tick/状态推进用差量；
+    
+-   发生“跨系统重建”“配方重排”“slot 动态激活切换”等复杂变化时，主动全量一次更稳。
+    
+
+* * *
+
+## 13\. `AbstractContainerMenu#doClick` 状态机拆解（硬核）
+
+本章直接讲状态机，不再停留在 API 层。
+
+### 13.1 QUICK\_CRAFT 三阶段
+
+拖拽分发不是连续事件，而是三段协议：
+
+-   start（header=0）
+    
+-   add slot（header=1）
+    
+-   end（header=2）
+    
+
+位运算工具：
+
+-   `getQuickcraftHeader()`
+    
+-   `getQuickcraftType()`
+    
+-   `getQuickcraftMask()`
+    
+
+这也是为什么你不应该自定义魔法数字发点击包。
+
+### 13.2 QUICK\_CRAFT 分配算法
+
+每个槽分到多少个物品由 `getQuickCraftPlaceCount()` 决定：
+
+-   type=0：均分
+    
+-   type=1：每槽 1 个
+    
+-   type=2：创造模式拉满
+    
+
+然后再受槽位上限限制：
+
+-   `slot.getMaxStackSize(stack)`
+    
+-   当前已有数量
+    
+
+### 13.3 普通点击分支（PICKUP/QUICK\_MOVE）
+
+`doClick()` 里最常用分支是：
+
+-   `PICKUP`：左右键交换/拆分/合并
+    
+-   `QUICK_MOVE`：Shift 快速转移（走你重写的 `quickMoveStack`）
+    
+
+注意：
+
+-   你的 `quickMoveStack` 出错，表现往往是“Shift 点击异常”，不是普通点击异常。
+    
+
+### 13.4 双击聚合（PICKUP\_ALL）
+
+当触发 `ClickType.PICKUP_ALL`，菜单会扫描槽位并把可合并同类拉到 carried。
+
+是否允许某槽参与由 `canTakeItemForPickAll()` 控制。
+
+如果你做“滤槽/锁槽”，可重写这个方法防止被聚合破坏。
+
+### 13.5 物品覆盖行为钩子
+
+菜单点击中会调用 `tryItemClickBehaviourOverride()`。
+
+这里会触发“物品堆叠在其它物品上”的特殊行为（如某些原版特殊交互）。
+
+**结论**：
+
+如果你发现“某些物品在你 GUI 里行为异常”，先看这个钩子链路，而不是先怀疑渲染代码。
+
+* * *
+
+## 14\. `AbstractContainerScreen` 输入系统拆解（鼠标/触屏/双击）
+
+### 14.1 为什么容器屏幕感觉“比普通 Screen 复杂很多”
+
+因为 `AbstractContainerScreen` 内置了：
+
+-   拖拽分发
+    
+-   双击识别
+    
+-   热键交换
+    
+-   触屏模式 snapback
+    
+-   浮动物品渲染
+    
+
+这部分本质是一个小型输入状态机。
+
+### 14.2 关键状态变量
+
+可重点关注字段：
+
+-   `isQuickCrafting`
+    
+-   `quickCraftSlots`
+    
+-   `doubleclick`
+    
+-   `lastClickSlot`
+    
+-   `clickedSlot`
+    
+-   `draggingItem`
+    
+-   `snapbackItem`
+    
+
+你调试时打印这些变量，比盲目看画面有效得多。
+
+### 14.3 `mouseClicked -> mouseDragged -> mouseReleased` 的契约
+
+-   `mouseClicked` 决定进入哪种模式（普通/快移/拖拽）。
+    
+-   `mouseDragged` 收集拖拽覆盖槽位（或触屏 quickdrop）。
+    
+-   `mouseReleased` 提交 QUICK\_CRAFT 三阶段点击。
+    
+
+对应方法：
+
+-   `mouseClicked()`
+    
+-   `mouseDragged()`
+    
+-   `mouseReleased()`
+    
+
+### 14.4 为什么“槽位看得见却点不到”
+
+通常不是纹理问题，而是 hit-test：
+
+-   `findSlot(mouseX, mouseY)` 没找到槽（坐标偏移错）；
+    
+-   `slot.isActive()` 为 false；
+    
+-   `hasClickedOutside` 逻辑把点击当成 outside。
+    
+
+### 14.5 `leftPos/topPos` 是坐标系根
+
+屏幕绘制与点击都依赖 `leftPos/topPos`。
+
+如果你在 `renderBg` 用了绝对坐标，而在槽位构造用相对坐标，必然错位。
+
+* * *
+
+## 15\. 槽位系统进阶：不仅是 `new Slot(...)`
+
+### 15.1 继承 `Slot` 是规则注入点
+
+你可以重写：
+
+-   `mayPlace()`：可放入规则
+    
+-   `mayPickup()`：可取出规则
+    
+-   `getMaxStackSize(ItemStack)`：栈上限规则
+    
+-   `isActive()`：动态显示规则
+    
+
+### 15.2 原版示例：燃料槽/产物槽
+
+-   `FurnaceFuelSlot` 限制可放燃料与桶。
+    
+-   `FurnaceResultSlot` 禁止放入、结算经验与配方统计。
+    
+
+这就是“业务规则前置到槽位层”的典型模式。
+
+### 15.3 示例：只允许单件 + 不可手动取出 + 条件激活
+
+```java
+public class LockedOutputSlot extends Slot {
+    private final java.util.function.BooleanSupplier activeSupplier;
+
+    public LockedOutputSlot(Container c, int idx, int x, int y, java.util.function.BooleanSupplier activeSupplier) {
+        super(c, idx, x, y);
+        this.activeSupplier = activeSupplier;
+    }
+
+    @Override
+    public boolean mayPlace(ItemStack stack) {
+        return false;
+    }
+
+    @Override
+    public boolean mayPickup(Player player) {
+        return player.hasInfiniteMaterials(); // 示例：只有创造可拿
+    }
+
+    @Override
+    public int getMaxStackSize(ItemStack stack) {
+        return 1;
+    }
+
+    @Override
+    public boolean isActive() {
+        return this.activeSupplier.getAsBoolean();
+    }
+}
+```
+
+### 15.4 示例：Ghost 槽位（展示配方，不承载真实物品）
+
+> 注意：这是“UI 展示技巧”，不要把它当真实库存。
+
+```java
+public class GhostSlot extends Slot {
+    public GhostSlot(Container c, int idx, int x, int y) {
+        super(c, idx, x, y);
+    }
+
+    @Override
+    public boolean mayPlace(ItemStack stack) {
+        return false;
+    }
+
+    @Override
+    public boolean mayPickup(Player player) {
+        return false;
+    }
+
+    @Override
+    public boolean isFake() {
+        return true;
+    }
+}
+```
+
+`isFake()` 会影响 `renderSlotContents()` 的渲染路径（走 `renderFakeItem`）。
+
+* * *
+
+## 16\. “带格子 GUI”完整工程模板（含 BlockEntity 侧思路）
+
+下面给一份更工程化的模板，把“菜单 + 方块实体 + 屏幕”完整串起来。
+
+### 16.1 推荐状态分层
+
+-   BlockEntity 持有真实状态：库存、进度、能量。
+    
+-   Menu 引用 BlockEntity 暴露的 `Container` 与 `ContainerData`。
+    
+-   Screen 只读取 Menu，不直接改 BE。
+    
+
+### 16.2 `ContainerData` 适配器模板
+
+```java
+public final class MachineData implements net.minecraft.world.inventory.ContainerData {
+    private final MyMachineBlockEntity be;
+
+    public MachineData(MyMachineBlockEntity be) {
+        this.be = be;
+    }
+
+    @Override
+    public int get(int index) {
+        return switch (index) {
+            case 0 -> be.getProgress();
+            case 1 -> be.getMaxProgress();
+            case 2 -> be.getMode();
+            case 3 -> (int) (be.getEnergy() & 0xFFFF);
+            case 4 -> (int) ((be.getEnergy() >>> 16) & 0xFFFF);
+            default -> 0;
+        };
+    }
+
+    @Override
+    public void set(int index, int value) {
+        // 一般客户端不应直接 set；如需允许，请显式处理
+    }
+
+    @Override
+    public int getCount() {
+        return 5;
+    }
+}
+```
+
+这个模板顺便演示了“long 能量拆分同步”。
+
+### 16.3 Menu 构造双形态（服务端/客户端）
+
+推荐写法：
+
+```java
+// 客户端构造：只能从 extraData 找 BE
+public MyMenu(int id, Inventory inv, RegistryFriendlyByteBuf buf) {
+    this(id, inv, resolveClientContainer(inv, buf.readBlockPos()), resolveClientData(inv, buf.readBlockPos()));
+}
+
+// 服务端构造：直接拿服务端容器与数据
+public MyMenu(int id, Inventory inv, Container container, ContainerData data) {
+    super((MenuType<?>) ModMenuTypes.MY_MENU.get(), id);
+    checkContainerSize(container, 9);
+    checkContainerDataCount(data, 5);
+    this.addDataSlots(data);
+}
+```
+
+注意：`extraData` 只能在客户端构造时读取一次，别重复 `readBlockPos`。
+
+### 16.4 `stillValid` 最佳实践
+
+对于方块菜单，优先使用：
+
+-   `ContainerLevelAccess.create()`
+    
+-   `AbstractContainerMenu.stillValid(access, player, block)`
+    
+
+这样能自动包含“目标方块还在 + 距离合法”的双校验。
+
+### 16.5 `removed` 与掉落策略
+
+当菜单关闭：
+
+-   如果容器里有临时槽（如信标支付槽），应在 `removed()` 或子类覆盖中处理回收/掉落。
+    
+-   参考 `BeaconMenu.removed()`。
+    
+
+* * *
+
+## 17\. 自定义特殊 GUI：多按钮、多模式、多层渲染的工程写法
+
+这一章给“真正可扩展”的特殊 GUI 模板。
+
+### 17.1 设计目标
+
+-   顶层 3 个模式按钮（提纯/压缩/注能）
+    
+-   右侧能量柱
+    
+-   中间动画区域
+    
+-   底部日志区域（文本）
+    
+
+### 17.2 状态模型建议
+
+把 UI 状态分三类：
+
+1.  **权威状态（服务器）**：mode、progress、energy。
+    
+2.  **派生状态（客户端）**：进度条像素宽度、颜色渐变。
+    
+3.  **瞬态状态（客户端）**：按钮 hover、动画 tick、tooltip 上次位置。
+    
+
+### 17.3 菜单按钮通道（服务端执行）
+
+```java
+@Override
+public boolean clickMenuButton(Player player, int id) {
+    // 0/1/2 代表模式按钮
+    if (id >= 0 && id <= 2) {
+        this.data.set(0, id);
+        this.broadcastChanges();
+        return true;
+    }
+
+    // 10 代表“清空日志”操作（示例）
+    if (id == 10) {
+        // 调服务端真实逻辑
+        this.broadcastChanges();
+        return true;
+    }
+    return false;
+}
+```
+
+对应客户端发送入口：`handleInventoryButtonClick()`。
+
+### 17.4 Screen 里管理按钮集合
+
+参考信标模式（见 `BeaconScreen` 按钮集合），你也应维护一个 `List<MyButton>`，统一做：
+
+-   init 时注册
+    
+-   containerTick 时刷新 active/selected
+    
+-   render 时按层绘制
+    
+
+### 17.5 示例：模式按钮组件
+
+```java
+public class ModeButton extends net.minecraft.client.gui.components.Button {
+    private final int modeId;
+    private final java.util.function.IntSupplier currentMode;
+
+    public ModeButton(int x, int y, int modeId, java.util.function.IntSupplier currentMode, OnPress onPress) {
+        super(x, y, 20, 20, net.minecraft.network.chat.Component.literal("M" + modeId), onPress, DEFAULT_NARRATION);
+        this.modeId = modeId;
+        this.currentMode = currentMode;
+    }
+
+    @Override
+    protected void renderWidget(net.minecraft.client.gui.GuiGraphics gg, int mouseX, int mouseY, float partialTick) {
+        int color = (currentMode.getAsInt() == modeId) ? 0xFF00C853 : 0xFF424242;
+        gg.fill(getX(), getY(), getX() + width, getY() + height, color);
+        gg.drawCenteredString(net.minecraft.client.Minecraft.getInstance().font, getMessage(), getX() + width / 2, getY() + 6, 0xFFFFFFFF);
+    }
+}
+```
+
+### 17.6 自定义绘制分层顺序建议
+
+在 `AbstractContainerScreen.render()` 的既有顺序下，你一般只需：
+
+-   `renderBg`：背景、进度、能量条
+    
+-   `renderLabels`：标题、文本
+    
+-   `render` 末尾：tooltip
+    
+
+如果要插入额外层，可用 `ContainerScreenEvent.Render.Foreground`。
+
+* * *
+
+## 18\. 网络与同步的工程策略（高并发/高频更新）
+
+### 18.1 不要每 tick 同步所有状态
+
+原则：
+
+-   只同步 UI 真正需要展示的值；
+    
+-   变化阈值过滤（例如能量每变化 20 再同步）；
+    
+-   对高频曲线，客户端可插值展示。
+    
+
+### 18.2 大数值同步策略
+
+已知 `ClientboundContainerSetDataPacket` 用 short 写值。
+
+方案：
+
+1.  拆高低位；
+    
+2.  缩放（例如百分比）；
+    
+3.  大对象走自定义网络包。
+    
+
+### 18.3 客户端插值模板
+
+```java
+// Screen 字段
+private float smoothEnergy;
+
+@Override
+public void containerTick() {
+    super.containerTick();
+    float target = this.menu.getEnergy();
+    this.smoothEnergy += (target - this.smoothEnergy) * 0.25f;
+}
+```
+
+注意：插值只用于显示，不改变业务状态。
+
+### 18.4 避免“伪双向同步”
+
+反例：
+
+-   客户端本地改 mode，再等服务端覆盖。
+    
+
+正例：
+
+-   客户端只发“请求切模式”；
+    
+-   服务端决定是否允许；
+    
+-   菜单广播真实 mode。
+    
+
+* * *
+
+## 19\. 可维护性设计：把 GUI 当成“协议 + 视图”项目
+
+### 19.1 建议的类职责边界
+
+-   `BlockEntity`：业务状态与运算。
+    
+-   `Menu`：同步桥 + 交互规则。
+    
+-   `Screen`：渲染与输入。
+    
+-   `ClientScreens`：映射注册。
+    
+-   `MenuTypeRegistry`：类型注册。
+    
+
+### 19.2 DTO 思维（即使不用真正 DTO 类）
+
+你可以把 `ContainerData` 看作最小 DTO 通道：
+
+-   index0 = progress
+    
+-   index1 = max
+    
+-   index2 = mode
+    
+
+在文档里固定协议表，后续维护成本会低很多。
+
+### 19.3 协议表模板（建议直接写进项目文档）
+
+```text
+MyMachineMenu Data 协议表
+index 0: progress       [0..maxProgress]
+index 1: maxProgress    [>=1]
+index 2: mode           [0..2]
+index 3: energyLow16
+index 4: energyHigh16
+```
+
+### 19.4 `quickMoveStack` 单元测试思路
+
+虽然 Minecraft 模组常缺测试，但你至少应做人工用例表：
+
+-   从机器槽 Shift 到背包
+    
+-   从背包 Shift 到机器
+    
+-   机器满、背包满、两边都满
+    
+-   特殊槽（只读槽）Shift 行为
+    
+
+写成 checklist，比线上抓 bug 高效太多。
+
+* * *
+
+## 20\. 更底层的源码映射清单（按问题反查）
+
+你调 GUI 时，建议按“问题 -> 源码位置”反查：
+
+### 20.1 打不开界面
+
+-   服务端开包：`ServerPlayer.openMenu()`
+    
+-   客户端接包：`ClientPacketListener.handleOpenScreen()`
+    
+-   屏幕工厂：`MenuScreens.create()`
+    
+
+### 20.2 数据不刷新
+
+-   菜单同步主循环：`broadcastChanges()`
+    
+-   DataSlot 脏标记：`checkAndClearUpdateFlag()`
+    
+-   客户端落地：`handleContainerSetData()`
+    
+
+### 20.3 点击行为异常
+
+-   菜单点击入口：`clicked()`
+    
+-   服务端处理：`handleContainerClick()`
+    
+-   客户端输入入口：`mouseClicked()`
+    
+
+### 20.4 槽位渲染/高亮异常
+
+-   槽位渲染：`renderSlot()`
+    
+-   槽位高亮：`renderSlotHighlight()`
+    
+
+### 20.5 按钮无法生效
+
+-   客户端发送按钮：`handleInventoryButtonClick()`
+    
+-   菜单按钮入口：`clickMenuButton()`
+    
+
+* * *
+
+## 21\. 生产级实践：两套可直接复用的代码骨架
+
+### 21.1 骨架 A：标准机器 GUI
+
+```java
+// A1. MenuType 注册
+public static final DeferredHolder<MenuType<?>, MenuType<MachineMenu>> MACHINE =
+    MENUS.register("machine", () -> IMenuTypeExtension.create((IContainerFactory<MachineMenu>) MachineMenu::new));
+
+// A2. Block use 打开
+if (!level.isClientSide) {
+    player.openMenu(new SimpleMenuProvider(
+        (id, inv, p) -> new MachineMenu(id, inv, beContainer, beData, pos),
+        Component.translatable("menu.mymod.machine")
+    ), buf -> buf.writeBlockPos(pos));
+}
+
+// A3. Client 注册 Screen
+@SubscribeEvent
+public static void register(RegisterMenuScreensEvent e) {
+    e.register(ModMenuTypes.MACHINE.get(), MachineScreen::new);
+}
+```
+
+### 21.2 骨架 B：特殊控制台 GUI
+
+```java
+// B1. Menu 内部
+@Override
+public boolean clickMenuButton(Player player, int id) {
+    return switch (id) {
+        case 0 -> { this.data.set(0, 0); this.broadcastChanges(); yield true; }
+        case 1 -> { this.data.set(0, 1); this.broadcastChanges(); yield true; }
+        case 2 -> { this.data.set(0, 2); this.broadcastChanges(); yield true; }
+        default -> false;
+    };
+}
+
+// B2. Screen 按钮
+this.addRenderableWidget(Button.builder(Component.literal("模式0"), b -> {
+    this.minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId, 0);
+}).bounds(this.leftPos + 130, this.topPos + 20, 50, 20).build());
+```
+
+### 21.3 骨架 C：事件叠加渲染
+
+```java
+@SubscribeEvent
+public static void onContainerForeground(net.neoforged.neoforge.client.event.ContainerScreenEvent.Render.Foreground e) {
+    var screen = e.getContainerScreen();
+    var gg = e.getGuiGraphics();
+    // 示例：在前景右上角画调试文本
+    gg.drawString(net.minecraft.client.Minecraft.getInstance().font, "DBG", screen.getGuiLeft() + 150, screen.getGuiTop() + 6, 0xFFFFAA00);
+}
+```
+
+> 注：不同映射版本下 `getGuiLeft/getGuiTop` 命名可能变化，按你当前开发环境为准。
+
+* * *
+
+## 22\. 零基础开发者的“落地路线图”
+
+### 1.复现原版模式
+
+-   仿照 `DispenserMenu` + `DispenserScreen` 做一个 3x3 GUI。
+    
+-   只做：打开、放物品、Shift 移动。
+    
+
+### 2.加业务状态
+
+-   加 `ContainerData` 两个字段：progress/max。
+    
+-   屏幕画进度条。
+    
+-   测试断线重连后是否一致。
+    
+
+### 3.做特殊交互
+
+-   增加 2~3 个按钮。
+    
+-   菜单实现 `clickMenuButton`。
+    
+-   加一个自绘能量柱。
+    
+
+### 4.做可维护化
+
+-   把所有索引常量化。
+    
+-   给 `Data` 建协议表。
+    
+-   补齐异常路径 checklist。
+    
+
+执行完 4 步，你就不再是“会抄 GUI”，而是“能独立设计 GUI 协议”的开发者。
+
+* * *
+
+## 23\. 高频 FAQ（底层版）
+
+### Q1：为什么我在 Screen 里直接改菜单字段，服务端没反应？
+
+因为 Screen 在客户端，权威状态在服务端。必须通过点击包、按钮包或自定义 C2S 包请求服务端修改。
+
+### Q2：为什么 `quickMoveStack` 返回 `ItemStack.EMPTY` 会导致看起来没反应？
+
+因为这代表“此次 quick move 失败或未执行有效变化”，客户端预测会被服务端状态覆盖。
+
+### Q3：为什么 `ContainerData.set` 在客户端执行了也没意义？
+
+因为服务端下一帧同步会覆盖。`set` 的业务写入应在服务端逻辑中发生。
+
+### Q4：什么时候该用 `Screen` 而不是 `AbstractContainerScreen`？
+
+只做纯客户端设置页、帮助页、视觉面板时；只要涉及库存或服务端状态，就用容器体系。
+
+### Q5：为什么同一个按钮点击有时触发两次？
+
+通常是你在按钮 `onPress` 与额外输入事件里都发了请求。确保发送路径唯一。
+
+* * *
+
+## 24\. 结尾：把 GUI 当“系统工程”而不是“UI 小功能”
+
+回到一开始的目标：
+
+你要学的不是“如何画一个窗口”，而是：
+
+1.  如何定义可验证、可同步、可恢复的一致性协议；
+    
+2.  如何把业务规则放在服务端与菜单层；
+    
+3.  如何让客户端只承担展示与输入采集。
+    
+
+当你用这套方法写 GUI，后续你写机器、终端、交易面板、多页签系统，都会复用同一个思维框架。
+
+这就是 NeoForge GUI 开发最核心的方法论价值。

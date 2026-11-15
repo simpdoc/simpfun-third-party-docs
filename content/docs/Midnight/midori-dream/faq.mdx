@@ -1,0 +1,136 @@
+---
+title: "常见问题"
+author: "午夜_Midnight"
+license: "CC BY-NC-SA 4.0"
+---
+## 我可以在服务端添加mod吗？
+
+**不能！**这是插件服务端不是模组服务端！
+
+但是你可以在客户端添加一些辅助mod，例如JEI，Jade，Carpet等。
+
+## 客户端在哪下？
+
+打开你常用的启动器，找到下载页面，选择一个服务端支持进入的客户端版本即可！
+
+![](/assets/docs/Midnight/midori-dream/未命名_副本.webp)
+
+![](/assets/docs/Midnight/midori-dream/image-KemD.webp)
+
+## 为什么不支持Java版1.7——1.20？
+
+> **警告**
+> 
+> 请尽量使用与服务端相同版本的客户端进入游戏！
+
+1.  此整合包没有安装ViaRewind（不支持1.7-1.9）；
+    
+2.  1.17及以下的版本进入1.18+的服务器会出现一些bug，包括但不限于：
+    
+
+-   1.16.5 及以下的客户端不支持 1.17+ 的新世界高度，客户端无法显示和交互 0 层以下的方块和 255 层以上的方块。
+    
+
+-   1.16.5 及以下的客户端在 1.17+ 服务器有时物品栏会不同步（幽灵物品）。
+    
+
+3.  新版本的物品特性无法在旧版本游戏内使用是因为ViaVersion**致力于兼容性而不是添加新的特性**。
+    
+
+因此我在viaversion的配置文件里锁死了最低版本为1.21，如果你确实有使用低版本的需求，请自行去配置文件删除相关配置。
+
+## 如何修改一个IP最大玩家注册数量？
+
+**方法1：**
+
+使用简幻欢文件管理的配置项修改：
+
+![](/assets/docs/Midnight/midori-dream/image-pUUZ.webp)
+
+**方法2：**
+
+打开`/plugins/AuthMe/config.yml`，找到第200行的`maxRegPerIp`，保存后重载插件。
+
+```yaml
+# 每个IP地址允许的最大注册次数
+# 值0表示注册次数不限！
+maxRegPerIp: 2
+```
+
+## 如何关闭侧边计分板
+
+打开文件管理页面，找到 `/plugins/TAB/config.yml` 文件，找到如下所示的这部分内容，将 enabled 后的 `true` 改为 `false` ：
+
+```yaml
+scoreboard:
+  enabled: true
+  toggle-command: /sb
+  remember-toggle-choice: false
+  hidden-by-default: false
+  use-numbers: true
+  static-number: 0
+  delay-on-join-milliseconds: 250
+  scoreboards:
+    scoreboard1:
+      title: '%animation:ServerName%'
+      lines:
+      - '&6玩家信息：'
+      - '&b玩家id：&f%player_name%'
+      - '&b当前称号：&r%playerTitle_use%'
+      - '&b当前延迟：&6%player_ping% &bms'
+      - '&b你的余额：&e%vault_eco_balance%'
+      - '&b客户端版本：&5%viaversion_player_protocol_version%'
+      - ''
+      - '&6服务器信息：'
+      - '&b在线玩家数：&a%online%&7/&c%server_max_players%'
+      - '&bTPS：&r%server_tps_1_colored%'
+      - ''
+      - '%animation:Tips%'
+      - '&b%time%   %date%'
+```
+
+## 登录超时时间太短了，怎么改？
+
+打开文件管理页面，找到`/plugins/authme/config.yml`文件，将第249行的 `timeout` 后的那个数修改为你需要的时间，单位为秒，保存后重启服务器。
+
+## 如何修改家的数量上限
+
+> **提示**
+> 
+> 仅限整合包版本 release 1.5.0+ 使用。
+
+打开文件管理页面，找到`/plugins/SunLight/modules/homes/settings.yml`文件，找到如下所示的这部分内容，修改红框内数字的值。保存后重启服务器或者使用 `/sunlight reload` 重载。
+
+![](/assets/docs/Midnight/midori-dream/image-dNeN.webp)
+
+## 如何添加新的称号
+
+请前往插件文档查看：
+
+[https://ricedoc.handyplus.cn/wiki/PlayerTitle/add/](https://ricedoc.handyplus.cn/wiki/PlayerTitle/add/)
+
+## 领地数量上限修改
+
+> **提示**
+> 
+> 仅适用于 release 1.6.1 或更高版本。
+
+默认情况下，玩家最多可以同时拥有5个领地。
+
+**方法1：**
+
+在配置文件 `/plugins/Dominion/limitations/default.yml` 找到下方所示的值更改：
+
+```yaml
+# How many dominions a player can create all over the world.
+# Set -1 means no limitation.
+amount-all-over-the-world: 5
+```
+
+保存后使用`/dom reload`重载配置或者重启服务器。
+
+**方法2：**
+
+在简幻欢控制台的`文件`——`配置项修改`中选择`Dominion 领地默认限制配置` ，修改`领地总上限` 后的数字，然后保存，使用`/dom reload`重载配置或者重启服务器。
+
+![](/assets/docs/Midnight/midori-dream/image-NljQ.webp)

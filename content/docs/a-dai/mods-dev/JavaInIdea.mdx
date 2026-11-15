@@ -1,0 +1,3369 @@
+---
+title: "Minecraft 模组开发完全入门指南：Java 基础与 IDEA 使用"
+author: "阿呆皮革厂"
+license: "CC BY-NC-SA 4.0"
+---
+* * *
+
+## 目录
+
+1.  [学习路线图：从零到模组开发者](#1-%E5%AD%A6%E4%B9%A0%E8%B7%AF%E7%BA%BF%E5%9B%BE%E4%BB%8E%E9%9B%B6%E5%88%B0%E6%A8%A1%E7%BB%84%E5%BC%80%E5%8F%91%E8%80%85)
+    
+2.  [Java 语言基础](#2-java-%E8%AF%AD%E8%A8%80%E5%9F%BA%E7%A1%80)
+    
+3.  [IntelliJ IDEA 完全指南](#3-intellij-idea-%E5%AE%8C%E5%85%A8%E6%8C%87%E5%8D%97)
+    
+4.  [Gradle 构建系统入门](#4-gradle-%E6%9E%84%E5%BB%BA%E7%B3%BB%E7%BB%9F%E5%85%A5%E9%97%A8)
+    
+5.  [NeoForge 开发环境搭建](#5-neoforge-%E5%BC%80%E5%8F%91%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA)
+    
+6.  [阅读和理解源码的方法论](#6-%E9%98%85%E8%AF%BB%E5%92%8C%E7%90%86%E8%A7%A3%E6%BA%90%E7%A0%81%E7%9A%84%E6%96%B9%E6%B3%95%E8%AE%BA)
+    
+7.  [模组开发核心概念](#7-%E6%A8%A1%E7%BB%84%E5%BC%80%E5%8F%91%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5)
+    
+8.  [实战：创建第一个模组项目](#8-%E5%AE%9E%E6%88%98%E5%88%9B%E5%BB%BA%E7%AC%AC%E4%B8%80%E4%B8%AA%E6%A8%A1%E7%BB%84%E9%A1%B9%E7%9B%AE)
+    
+
+* * *
+
+## 1\. 学习路线图：从零到模组开发者
+
+### 1.1 需要掌握的技能树
+
+```
+第一阶段：编程基础
+├── Java 语法基础
+│   ├── 变量、数据类型、运算符
+│   ├── 控制流程（if/for/while）
+│   ├── 方法（函数）的定义和调用
+│   └── 数组和集合（List/Map）
+├── 面向对象编程（OOP）
+│   ├── 类与对象
+│   ├── 封装、继承、多态
+│   ├── 接口与抽象类
+│   └── 泛型基础
+└── 开发工具使用
+    ├── IntelliJ IDEA 基本操作
+    ├── 项目结构理解
+    └── 调试技巧
+
+第二阶段：Minecraft 模组开发
+├── Gradle 构建系统
+├── NeoForge 框架理解
+├── 注册系统（Registry）
+├── 事件系统（Event Bus）
+├── 资源文件（JSON/PNG）
+└── 数据生成（Data Generation）
+
+第三阶段：进阶开发
+├── Mixin 注入技术
+├── 网络通信（Networking）
+├── 配置文件系统
+├── 兼容性处理
+└── 性能优化
+```
+
+### 1.2 必备软件清单
+
+| 软件 | 版本要求 | 用途 | 下载地址 |
+| --- | --- | --- | --- |
+| **JDK** | 21+ | Java 开发工具包 | [Oracle](https://www.oracle.com/java/technologies/downloads/) / [Adoptium](https://adoptium.net/) |
+| **IntelliJ IDEA** | 2023.3+ | 集成开发环境 | [JetBrains 官网](https://www.jetbrains.com/idea/download/) |
+| **Git** | 最新版 | 版本控制（可选但推荐） | [Git 官网](https://git-scm.com/) |
+| **Minecraft Java 版** | 1.21+ | 测试模组 | [Minecraft 官网](https://www.minecraft.net/) |
+
+**重要提示：**
+
+-   IDEA 社区版（Community）免费且足够使用
+    
+-   JDK 推荐使用 Adoptium（Eclipse Temurin），开源且稳定
+    
+-   确保 JDK 版本与 Minecraft 版本匹配（1.21 需要 Java 21）
+    
+
+### 1.3 学习资源推荐
+
+**官方文档：**
+
+-   [NeoForge 官方文档](https://docs.neoforged.net/)
+    
+-   [Minecraft Wiki](https://minecraft.wiki/)
+    
+-   [Java 官方教程](https://docs.oracle.com/javase/tutorial/)
+    
+
+**社区资源：**
+
+-   [NeoForge Discord](https://discord.neoforged.net/)
+    
+-   [BBSMC](https://bbsmc.net/)
+    
+-   [GitHub NeoForge 示例模组](https://github.com/neoforged/MDK)
+    
+
+* * *
+
+## 2\. Java 语言基础
+
+### 2.1 Java 是什么？
+
+Java 是一种**面向对象**的编程语言，具有以下特点：
+
+-   **跨平台**：一次编写，到处运行（Write Once, Run Anywhere）
+    
+-   **强类型**：变量必须先声明类型
+    
+-   **自动内存管理**：垃圾回收器（GC）自动释放内存
+    
+-   **丰富的标准库**：提供大量现成的工具类
+    
+
+**为什么 Minecraft 使用 Java？**
+
+-   Minecraft Java 版最初用 Java 编写
+    
+-   模组开发需要与游戏代码交互，因此必须使用 Java
+    
+
+### 2.2 第一个 Java 程序
+
+```java
+// HelloWorld.java
+public class HelloWorld {
+    public static void main(String[] args) {
+        System.out.println("Hello, Minecraft Modding!");
+    }
+}
+```
+
+**逐行解析：**
+
+```java
+public class HelloWorld {
+```
+
+-   `public` — 访问修饰符，表示这个类可以被任何地方访问
+    
+-   `class` — 关键字，表示定义一个类
+    
+-   `HelloWorld` — 类名，必须与文件名一致（`HelloWorld.java`）
+    
+-   `{` — 类的开始
+    
+
+```java
+    public static void main(String[] args) {
+```
+
+-   `public` — 公开方法
+    
+-   `static` — 静态方法，不需要创建对象就能调用
+    
+-   `void` — 返回类型，表示不返回任何值
+    
+-   `main` — 方法名，Java 程序的入口点
+    
+-   `String[] args` — 参数，命令行参数数组
+    
+
+```java
+        System.out.println("Hello, Minecraft Modding!");
+```
+
+-   `System.out` — 标准输出流
+    
+-   `println` — 打印一行文本
+    
+-   `"..."` — 字符串字面量
+    
+
+### 2.3 变量与数据类型
+
+#### 2.3.1 基本数据类型
+
+Java 有 8 种基本数据类型：
+
+```java
+// 整数类型
+byte myByte = 127;           // 8位，范围 -128 到 127
+short myShort = 32000;       // 16位，范围 -32768 到 32767
+int myInt = 2147483647;      // 32位，最常用的整数类型
+long myLong = 9223372036854775807L;  // 64位，注意末尾的 L
+
+// 浮点类型
+float myFloat = 3.14f;       // 32位，注意末尾的 f
+double myDouble = 3.14159265359;  // 64位，默认的小数类型
+
+// 字符类型
+char myChar = 'A';           // 16位 Unicode 字符
+
+// 布尔类型
+boolean myBoolean = true;    // 只有 true 或 false
+```
+
+**在模组开发中的应用：**
+
+```java
+// 来自 Item.Properties 的示例
+int maxStackSize = 64;           // 物品最大堆叠数量
+int maxDamage = 250;             // 工具耐久度
+boolean isFireResistant = true;  // 是否防火
+```
+
+#### 2.3.2 引用数据类型
+
+除了基本类型，其他都是引用类型（对象）：
+
+```java
+// 字符串（最常用的引用类型）
+String modId = "yourmod";
+String itemName = "my_item";
+
+// 数组
+int[] numbers = {1, 2, 3, 4, 5};
+String[] names = new String[10];  // 创建长度为 10 的数组
+
+// 对象
+Item myItem = new Item(new Item.Properties());
+```
+
+**基本类型 vs 引用类型的区别：**
+
+```java
+// 基本类型：直接存储值
+int a = 10;
+int b = a;    // 复制值
+b = 20;       // 修改 b 不影响 a
+// 结果：a = 10, b = 20
+
+// 引用类型：存储对象的地址
+Item item1 = new Item(new Item.Properties());
+Item item2 = item1;  // 复制地址，指向同一个对象
+// item1 和 item2 指向同一个 Item 对象
+```
+
+### 2.4 运算符
+
+```java
+// 算术运算符
+int sum = 10 + 5;        // 加法：15
+int diff = 10 - 5;       // 减法：5
+int product = 10 * 5;    // 乘法：50
+int quotient = 10 / 5;   // 除法：2
+int remainder = 10 % 3;  // 取模（余数）：1
+
+// 比较运算符（返回 boolean）
+boolean isEqual = (10 == 10);      // 等于：true
+boolean notEqual = (10 != 5);      // 不等于：true
+boolean greater = (10 > 5);        // 大于：true
+boolean less = (5 < 10);           // 小于：true
+
+// 逻辑运算符
+boolean and = (true && false);     // 与：false
+boolean or = (true || false);      // 或：true
+boolean not = !true;               // 非：false
+
+// 赋值运算符
+int x = 10;
+x += 5;   // 等价于 x = x + 5，结果：15
+x -= 3;   // 等价于 x = x - 3，结果：12
+x *= 2;   // 等价于 x = x * 2，结果：24
+x /= 4;   // 等价于 x = x / 4，结果：6
+```
+
+### 2.5 控制流程
+
+#### 2.5.1 条件语句（if-else）
+
+```java
+int durability = 50;
+
+if (durability > 100) {
+    System.out.println("耐久度充足");
+} else if (durability > 50) {
+    System.out.println("耐久度一般");
+} else {
+    System.out.println("耐久度不足");
+}
+```
+
+**在模组开发中的应用：**
+
+```java
+// 检查物品是否可以使用
+@Override
+public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
+    ItemStack stack = player.getItemInHand(hand);
+    
+    if (stack.getDamageValue() >= stack.getMaxDamage()) {
+        // 物品已损坏
+        return InteractionResultHolder.fail(stack);
+    }
+    
+    // 物品可以使用
+    return InteractionResultHolder.success(stack);
+}
+```
+
+#### 2.5.2 循环语句
+
+**for 循环（已知循环次数）：**
+
+```java
+// 打印 0 到 9
+for (int i = 0; i < 10; i++) {
+    System.out.println(i);
+}
+
+// 遍历数组
+String[] items = {"apple", "banana", "cherry"};
+for (int i = 0; i < items.length; i++) {
+    System.out.println(items[i]);
+}
+
+// 增强 for 循环（for-each）
+for (String item : items) {
+    System.out.println(item);
+}
+```
+
+**while 循环（条件循环）：**
+
+```java
+int count = 0;
+while (count < 5) {
+    System.out.println("Count: " + count);
+    count++;
+}
+```
+
+**在模组开发中的应用：**
+
+```java
+// 遍历玩家背包中的所有物品
+for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+    ItemStack stack = player.getInventory().getItem(i);
+    if (!stack.isEmpty()) {
+        // 处理每个物品
+    }
+}
+```
+
+### 2.6 方法（函数）
+
+方法是执行特定任务的代码块。
+
+**方法的定义：**
+
+```java
+// 访问修饰符 返回类型 方法名(参数列表) {
+//     方法体
+//     return 返回值;
+// }
+
+public int add(int a, int b) {
+    int sum = a + b;
+    return sum;
+}
+
+// 无返回值的方法
+public void printMessage(String message) {
+    System.out.println(message);
+}
+
+// 无参数的方法
+public String getModId() {
+    return "yourmod";
+}
+```
+
+**方法的调用：**
+
+```java
+int result = add(10, 20);        // 调用 add 方法，result = 30
+printMessage("Hello");           // 调用 printMessage 方法
+String modId = getModId();       // 调用 getModId 方法
+```
+
+**在模组开发中的应用：**
+
+从 `DeferredRegister.java` 可以看到工厂方法的使用：
+
+```java
+// 静态工厂方法
+public static DeferredRegister.Items createItems(String modid) {
+    return new Items(modid);
+}
+
+// 实例方法
+public <I extends T> DeferredHolder<T, I> register(String name, Supplier<? extends I> sup) {
+    // 方法实现
+}
+```
+
+### 2.7 面向对象编程（OOP）核心概念
+
+#### 2.7.1 类与对象
+
+**类（Class）**：对象的模板，定义了对象的属性和行为。
+
+**对象（Object）**：类的实例，具体的实体。
+
+```java
+// 定义一个类
+public class Sword {
+    // 属性（字段）
+    private int damage;
+    private int durability;
+    
+    // 构造函数
+    public Sword(int damage, int durability) {
+        this.damage = damage;
+        this.durability = durability;
+    }
+    
+    // 方法
+    public void attack() {
+        System.out.println("造成 " + damage + " 点伤害");
+        durability--;
+    }
+    
+    // Getter 方法
+    public int getDamage() {
+        return damage;
+    }
+    
+    // Setter 方法
+    public void setDamage(int damage) {
+        this.damage = damage;
+    }
+}
+
+// 创建对象
+Sword ironSword = new Sword(7, 250);
+ironSword.attack();  // 调用方法
+int damage = ironSword.getDamage();  // 获取属性
+```
+
+**关键概念：**
+
+-   `this` — 指向当前对象
+    
+-   `private` — 私有属性，只能在类内部访问
+    
+-   `public` — 公开方法，可以在任何地方访问
+    
+-   构造函数 — 与类同名，用于初始化对象
+    
+
+#### 2.7.2 封装（Encapsulation）
+
+封装是将数据（属性）和操作数据的方法绑定在一起，并隐藏内部实现细节。
+
+```java
+public class Item {
+    // 私有属性，外部无法直接访问
+    private int maxStackSize;
+    
+    // 通过公开方法访问
+    public int getMaxStackSize() {
+        return maxStackSize;
+    }
+    
+    // 通过公开方法修改，可以添加验证逻辑
+    public void setMaxStackSize(int size) {
+        if (size > 0 && size <= 64) {
+            this.maxStackSize = size;
+        } else {
+            throw new IllegalArgumentException("堆叠数量必须在 1-64 之间");
+        }
+    }
+}
+```
+
+**为什么要封装？**
+
+-   保护数据不被随意修改
+    
+-   可以在 setter 中添加验证逻辑
+    
+-   隐藏实现细节，降低耦合度
+    
+
+#### 2.7.3 继承（Inheritance）
+
+继承允许一个类（子类）继承另一个类（父类）的属性和方法。
+
+```java
+// 父类
+public class Item {
+    protected int maxStackSize;
+    
+    public Item(Properties properties) {
+        this.maxStackSize = properties.maxStackSize;
+    }
+    
+    public int getMaxStackSize() {
+        return maxStackSize;
+    }
+}
+
+// 子类继承父类
+public class SwordItem extends Item {
+    private int attackDamage;
+    
+    public SwordItem(Properties properties, int attackDamage) {
+        super(properties);  // 调用父类构造函数
+        this.attackDamage = attackDamage;
+    }
+    
+    // 子类特有的方法
+    public int getAttackDamage() {
+        return attackDamage;
+    }
+}
+```
+
+**关键概念：**
+
+-   `extends` — 继承关键字
+    
+-   `super` — 调用父类的构造函数或方法
+    
+-   `protected` — 受保护的，子类可以访问
+    
+-   子类继承父类的所有非私有成员
+    
+
+**在模组开发中的应用：**
+
+所有自定义物品都继承自 `Item` 类：
+
+```java
+public class MyCustomItem extends Item {
+    public MyCustomItem(Properties properties) {
+        super(properties);
+    }
+    
+    // 重写父类方法，实现自定义行为
+    @Override
+    public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
+        // 自定义逻辑
+        return super.use(level, player, hand);
+    }
+}
+```
+
+#### 2.7.4 多态（Polymorphism）
+
+多态允许使用父类引用指向子类对象，实现"一个接口，多种实现"。
+
+```java
+// 父类引用指向子类对象
+Item item1 = new Item(new Item.Properties());
+Item item2 = new SwordItem(new Item.Properties(), 7);  // SwordItem 是 Item 的子类
+
+// 调用方法时，会根据实际对象类型执行对应的方法
+item1.use(level, player, hand);  // 执行 Item 的 use 方法
+item2.use(level, player, hand);  // 执行 SwordItem 的 use 方法（如果重写了）
+```
+
+**方法重写（Override）：**
+
+子类可以重写父类的方法，提供不同的实现：
+
+```java
+public class SwordItem extends Item {
+    @Override  // 注解，表示这是重写父类方法
+    public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
+        // 自定义实现
+        player.sendSystemMessage(Component.literal("使用了剑！"));
+        return InteractionResultHolder.success(player.getItemInHand(hand));
+    }
+}
+```
+
+`@Override` **注解的作用：**
+
+-   编译器会检查父类是否真的有这个方法
+    
+-   防止拼写错误（如果父类没有这个方法，编译会报错）
+    
+-   提高代码可读性
+    
+
+#### 2.7.5 接口（Interface）
+
+接口定义了一组方法规范，类可以实现（implement）接口。
+
+```java
+// 定义接口
+public interface ItemLike {
+    Item asItem();  // 抽象方法，没有实现
+}
+
+// 实现接口
+public class DeferredItem<T extends Item> implements ItemLike {
+    @Override
+    public Item asItem() {
+        return this.get();  // 提供具体实现
+    }
+}
+```
+
+**接口 vs 抽象类：**
+
+| 特性 | 接口（Interface） | 抽象类（Abstract Class） |
+| --- | --- | --- |
+| 多继承 | 一个类可以实现多个接口 | 一个类只能继承一个抽象类 |
+| 方法 | 默认都是抽象方法（Java 8+ 可以有默认实现） | 可以有抽象方法和具体方法 |
+| 字段 | 只能有常量（`public static final`） | 可以有普通字段 |
+| 构造函数 | 不能有构造函数 | 可以有构造函数 |
+
+**在模组开发中的应用：**
+
+从 `DeferredItem.java` 可以看到：
+
+```java
+public class DeferredItem<T extends Item> extends DeferredHolder<Item, T> implements ItemLike {
+    // 实现 ItemLike 接口
+    @Override
+    public Item asItem() {
+        return this.get();
+    }
+}
+```
+
+这样 `DeferredItem` 就可以在需要 `ItemLike` 的地方使用。
+
+### 2.8 泛型（Generics）
+
+泛型允许在定义类、接口、方法时使用类型参数，提高代码复用性和类型安全。
+
+#### 2.8.1 泛型类
+
+```java
+// 定义泛型类
+public class Box<T> {
+    private T content;
+    
+    public void set(T content) {
+        this.content = content;
+    }
+    
+    public T get() {
+        return content;
+    }
+}
+
+// 使用泛型类
+Box<String> stringBox = new Box<>();
+stringBox.set("Hello");
+String value = stringBox.get();  // 不需要类型转换
+
+Box<Integer> intBox = new Box<>();
+intBox.set(123);
+Integer number = intBox.get();
+```
+
+#### 2.8.2 泛型约束
+
+可以限制泛型参数的类型：
+
+```java
+// T 必须是 Item 或其子类
+public class DeferredItem<T extends Item> {
+    private T item;
+    
+    public T get() {
+        return item;
+    }
+}
+
+// 使用
+DeferredItem<SwordItem> sword = new DeferredItem<>();  // 正确
+// DeferredItem<String> invalid = new DeferredItem<>();  // 编译错误！String 不是 Item 的子类
+```
+
+**在模组开发中的应用：**
+
+从 `DeferredRegister.java` 可以看到：
+
+```java
+public class DeferredRegister<T> {
+    // T 是注册表类型（如 Item、Block）
+}
+
+public class Items extends DeferredRegister<Item> {
+    // 固定 T = Item
+}
+```
+
+### 2.9 Lambda 表达式与方法引用
+
+Lambda 表达式是 Java 8 引入的特性，用于简化匿名函数的写法。
+
+#### 2.9.1 Lambda 表达式
+
+```java
+// 传统写法：匿名内部类
+Supplier<Item> supplier = new Supplier<Item>() {
+    @Override
+    public Item get() {
+        return new Item(new Item.Properties());
+    }
+};
+
+// Lambda 表达式写法
+Supplier<Item> supplier = () -> new Item(new Item.Properties());
+```
+
+**Lambda 语法：**
+
+```java
+// 无参数
+() -> expression
+() -> { statements; }
+
+// 一个参数
+x -> expression
+x -> { statements; }
+
+// 多个参数
+(x, y) -> expression
+(x, y) -> { statements; }
+```
+
+#### 2.9.2 方法引用
+
+方法引用是 Lambda 的简化形式：
+
+```java
+// Lambda 表达式
+Supplier<Item> supplier = () -> new Item(new Item.Properties());
+
+// 方法引用（构造函数引用）
+Function<Item.Properties, Item> constructor = Item::new;
+
+// 静态方法引用
+Function<String, Integer> parser = Integer::parseInt;
+
+// 实例方法引用
+String str = "hello";
+Supplier<String> upperCase = str::toUpperCase;
+```
+
+**在模组开发中的应用：**
+
+```java
+// 注册物品时使用方法引用
+public static final DeferredItem<MySword> MY_SWORD = 
+    ITEMS.registerItem("my_sword", MySword::new, new Item.Properties());
+
+// 等价于
+public static final DeferredItem<MySword> MY_SWORD = 
+    ITEMS.registerItem("my_sword", 
+        props -> new MySword(props), 
+        new Item.Properties());
+```
+
+### 2.10 常用集合类
+
+Java 提供了丰富的集合类，用于存储和操作数据。
+
+#### 2.10.1 List（列表）
+
+```java
+import java.util.ArrayList;
+import java.util.List;
+
+// 创建列表
+List<String> items = new ArrayList<>();
+
+// 添加元素
+items.add("apple");
+items.add("banana");
+items.add("cherry");
+
+// 获取元素
+String first = items.get(0);  // "apple"
+
+// 遍历
+for (String item : items) {
+    System.out.println(item);
+}
+
+// 大小
+int size = items.size();  // 3
+
+// 删除元素
+items.remove(0);  // 删除第一个元素
+items.remove("banana");  // 删除指定元素
+```
+
+#### 2.10.2 Map（映射）
+
+```java
+import java.util.HashMap;
+import java.util.Map;
+
+// 创建映射
+Map<String, Integer> prices = new HashMap<>();
+
+// 添加键值对
+prices.put("apple", 10);
+prices.put("banana", 5);
+prices.put("cherry", 15);
+
+// 获取值
+int applePrice = prices.get("apple");  // 10
+
+// 检查键是否存在
+boolean hasApple = prices.containsKey("apple");  // true
+
+// 遍历
+for (Map.Entry<String, Integer> entry : prices.entrySet()) {
+    System.out.println(entry.getKey() + ": " + entry.getValue());
+}
+```
+
+**在模组开发中的应用：**
+
+从 `DeferredRegister.java` 可以看到：
+
+```java
+// 使用 Map 存储待注册的对象
+private final Map<DeferredHolder<T, ? extends T>, Supplier<? extends T>> entries = new LinkedHashMap<>();
+```
+
+### 2.11 异常处理
+
+异常是程序运行时发生的错误。Java 使用 `try-catch` 处理异常。
+
+```java
+try {
+    // 可能抛出异常的代码
+    int result = 10 / 0;  // 会抛出 ArithmeticException
+} catch (ArithmeticException e) {
+    // 捕获并处理异常
+    System.out.println("除数不能为零：" + e.getMessage());
+} finally {
+    // 无论是否发生异常都会执行
+    System.out.println("清理资源");
+}
+```
+
+**常见异常类型：**
+
+```java
+// NullPointerException：空指针异常
+String str = null;
+// str.length();  // 会抛出 NullPointerException
+
+// IllegalArgumentException：非法参数异常
+public void setStackSize(int size) {
+    if (size < 1 || size > 64) {
+        throw new IllegalArgumentException("堆叠数量必须在 1-64 之间");
+    }
+}
+
+// IOException：输入输出异常
+try {
+    Files.readString(Path.of("file.txt"));
+} catch (IOException e) {
+    e.printStackTrace();
+}
+```
+
+### 2.12 常用设计模式
+
+设计模式是解决常见编程问题的最佳实践方案。NeoForge 源码中大量使用了设计模式，理解它们对阅读源码至关重要。
+
+#### 2.12.1 工厂方法模式（Factory Method）
+
+**问题：** 直接使用 `new` 创建对象可能导致代码耦合度高，难以扩展。
+
+**解决方案：** 使用静态方法创建对象，隐藏创建细节。
+
+**在 NeoForge 中的应用：**
+
+从 `DeferredRegister.java` 可以看到：
+
+```java
+// 工厂方法：创建 Items 类型的 DeferredRegister
+public static DeferredRegister.Items createItems(String modid) {
+    return new Items(modid);
+}
+
+// 工厂方法：创建 Blocks 类型的 DeferredRegister
+public static DeferredRegister.Blocks createBlocks(String modid) {
+    return new Blocks(modid);
+}
+```
+
+**为什么不直接** `new`**？**
+
+```java
+// 不推荐：直接使用构造函数
+DeferredRegister<Item> items = new DeferredRegister<>(Registries.ITEM, "yourmod");
+
+// 推荐：使用工厂方法
+DeferredRegister.Items items = DeferredRegister.createItems("yourmod");
+```
+
+**优点：**
+
+-   隐藏实现细节（你不需要知道 `Registries.ITEM`）
+    
+-   类型安全（`Items` 类固定了泛型参数）
+    
+-   易于维护（如果内部实现改变，你的代码不需要修改）
+    
+
+**自己实现工厂方法：**
+
+```java
+public class ItemFactory {
+    // 工厂方法：创建不同类型的物品
+    public static Item createSimpleItem() {
+        return new Item(new Item.Properties());
+    }
+    
+    public static SwordItem createSword(int damage) {
+        return new SwordItem(Tiers.DIAMOND, damage, -2.4f, new Item.Properties());
+    }
+    
+    public static Item createFireResistantItem() {
+        return new Item(new Item.Properties().fireResistant());
+    }
+}
+
+// 使用工厂方法
+Item item1 = ItemFactory.createSimpleItem();
+SwordItem sword = ItemFactory.createSword(7);
+```
+
+#### 2.12.2 建造者模式（Builder Pattern）
+
+**问题：** 当一个类有很多可选参数时，构造函数会变得非常复杂。
+
+**解决方案：** 使用建造者模式，通过链式调用设置参数。
+
+**在 NeoForge 中的应用：**
+
+`Item.Properties` 就是一个典型的建造者：
+
+```java
+// 建造者模式：链式调用设置属性
+Item.Properties props = new Item.Properties()
+    .stacksTo(16)              // 设置堆叠数量
+    .durability(250)           // 设置耐久度
+    .fireResistant()           // 设置防火
+    .rarity(Rarity.RARE);      // 设置稀有度
+
+// 创建物品
+Item item = new Item(props);
+```
+
+**对比传统构造函数：**
+
+```java
+// 如果不用建造者模式，构造函数会变成这样：
+public Item(int maxStackSize, int maxDamage, boolean fireResistant, Rarity rarity) {
+    // 参数太多，容易搞混顺序
+}
+
+// 调用时很难看懂每个参数的含义
+Item item = new Item(16, 250, true, Rarity.RARE);  // 这些数字是什么意思？
+```
+
+**建造者模式的优点：**
+
+-   参数含义清晰（方法名就是说明）
+    
+-   可选参数灵活（只设置需要的）
+    
+-   链式调用优雅
+    
+
+**自己实现建造者：**
+
+```java
+public class Sword {
+    private final int damage;
+    private final int durability;
+    private final boolean fireResistant;
+    
+    // 私有构造函数，只能通过 Builder 创建
+    private Sword(Builder builder) {
+        this.damage = builder.damage;
+        this.durability = builder.durability;
+        this.fireResistant = builder.fireResistant;
+    }
+    
+    // 建造者类
+    public static class Builder {
+        private int damage = 5;           // 默认值
+        private int durability = 100;     // 默认值
+        private boolean fireResistant = false;
+        
+        public Builder damage(int damage) {
+            this.damage = damage;
+            return this;  // 返回自己，支持链式调用
+        }
+        
+        public Builder durability(int durability) {
+            this.durability = durability;
+            return this;
+        }
+        
+        public Builder fireResistant() {
+            this.fireResistant = true;
+            return this;
+        }
+        
+        public Sword build() {
+            return new Sword(this);
+        }
+    }
+}
+
+// 使用建造者
+Sword sword = new Sword.Builder()
+    .damage(10)
+    .durability(500)
+    .fireResistant()
+    .build();
+```
+
+#### 2.12.3 单例模式（Singleton）
+
+**问题：** 某些类在整个程序中只应该有一个实例（如配置管理器、注册表）。
+
+**解决方案：** 使用单例模式，确保只创建一个实例。
+
+**在 Minecraft 中的应用：**
+
+```java
+// Minecraft 的注册表就是单例
+Registry<Item> itemRegistry = BuiltInRegistries.ITEM;  // 全局唯一的物品注册表
+```
+
+**实现单例模式：**
+
+```java
+public class ConfigManager {
+    // 私有静态实例
+    private static ConfigManager instance;
+    
+    // 私有构造函数，防止外部创建实例
+    private ConfigManager() {
+        // 初始化配置
+    }
+    
+    // 公开的获取实例方法
+    public static ConfigManager getInstance() {
+        if (instance == null) {
+            instance = new ConfigManager();
+        }
+        return instance;
+    }
+    
+    // 配置方法
+    public void loadConfig() {
+        // 加载配置
+    }
+}
+
+// 使用单例
+ConfigManager config = ConfigManager.getInstance();
+config.loadConfig();
+```
+
+**更好的单例实现（线程安全）：**
+
+```java
+public class ConfigManager {
+    // 使用枚举实现单例（推荐方式）
+    private ConfigManager() {}
+    
+    private static class Holder {
+        private static final ConfigManager INSTANCE = new ConfigManager();
+    }
+    
+    public static ConfigManager getInstance() {
+        return Holder.INSTANCE;
+    }
+}
+```
+
+#### 2.12.4 观察者模式（Observer）
+
+**问题：** 当一个对象状态改变时，需要通知多个其他对象。
+
+**解决方案：** 使用观察者模式，对象之间松耦合。
+
+**在 NeoForge 中的应用：**
+
+NeoForge 的**事件系统**就是观察者模式的实现：
+
+```java
+// 事件（被观察的对象）
+public class PlayerInteractEvent extends Event {
+    private final Player player;
+    private final ItemStack stack;
+    
+    // 事件数据
+}
+
+// 观察者（事件监听器）
+@EventBusSubscriber(modid = "yourmod")
+public class EventHandler {
+    
+    @SubscribeEvent
+    public static void onPlayerInteract(PlayerInteractEvent event) {
+        // 当事件发生时，这个方法会被调用
+        System.out.println("玩家交互了！");
+    }
+}
+```
+
+**观察者模式的组成：**
+
+1.  **主题（Subject）**：被观察的对象（事件）
+    
+2.  **观察者（Observer）**：监听主题变化的对象（事件监听器）
+    
+3.  **事件总线（Event Bus）**：管理主题和观察者的关系
+    
+
+**自己实现观察者模式：**
+
+```java
+// 观察者接口
+interface ItemObserver {
+    void onItemUsed(Item item);
+}
+
+// 被观察的对象
+class ItemManager {
+    private List<ItemObserver> observers = new ArrayList<>();
+    
+    // 注册观察者
+    public void addObserver(ItemObserver observer) {
+        observers.add(observer);
+    }
+    
+    // 通知所有观察者
+    public void useItem(Item item) {
+        // 执行物品使用逻辑
+        System.out.println("使用物品：" + item);
+        
+        // 通知所有观察者
+        for (ItemObserver observer : observers) {
+            observer.onItemUsed(item);
+        }
+    }
+}
+
+// 具体观察者
+class Logger implements ItemObserver {
+    @Override
+    public void onItemUsed(Item item) {
+        System.out.println("日志：物品被使用 - " + item);
+    }
+}
+
+class Statistics implements ItemObserver {
+    @Override
+    public void onItemUsed(Item item) {
+        System.out.println("统计：物品使用次数 +1");
+    }
+}
+
+// 使用
+ItemManager manager = new ItemManager();
+manager.addObserver(new Logger());
+manager.addObserver(new Statistics());
+manager.useItem(myItem);  // 会通知所有观察者
+```
+
+#### 2.12.5 策略模式（Strategy）
+
+**问题：** 需要在运行时选择不同的算法或行为。
+
+**解决方案：** 将算法封装成独立的类，可以互相替换。
+
+**在 Minecraft 中的应用：**
+
+```java
+// 不同的工具材料就是不同的策略
+Tier diamondTier = Tiers.DIAMOND;  // 钻石策略
+Tier ironTier = Tiers.IRON;        // 铁策略
+
+// 使用不同的策略创建工具
+SwordItem diamondSword = new SwordItem(diamondTier, 3, -2.4f, props);
+SwordItem ironSword = new SwordItem(ironTier, 3, -2.4f, props);
+```
+
+**自己实现策略模式：**
+
+```java
+// 策略接口
+interface AttackStrategy {
+    void attack(Player player, Entity target);
+}
+
+// 具体策略1：近战攻击
+class MeleeAttack implements AttackStrategy {
+    @Override
+    public void attack(Player player, Entity target) {
+        System.out.println("近战攻击！");
+        target.hurt(player.getDamageSources().playerAttack(player), 5.0f);
+    }
+}
+
+// 具体策略2：远程攻击
+class RangedAttack implements AttackStrategy {
+    @Override
+    public void attack(Player player, Entity target) {
+        System.out.println("远程攻击！");
+        // 发射箭矢
+    }
+}
+
+// 使用策略的类
+class Weapon {
+    private AttackStrategy strategy;
+    
+    public Weapon(AttackStrategy strategy) {
+        this.strategy = strategy;
+    }
+    
+    public void setStrategy(AttackStrategy strategy) {
+        this.strategy = strategy;
+    }
+    
+    public void performAttack(Player player, Entity target) {
+        strategy.attack(player, target);
+    }
+}
+
+// 使用
+Weapon sword = new Weapon(new MeleeAttack());
+sword.performAttack(player, zombie);
+
+Weapon bow = new Weapon(new RangedAttack());
+bow.performAttack(player, skeleton);
+```
+
+#### 2.12.6 设计模式总结
+
+| 模式 | 用途 | NeoForge 中的例子 |
+| --- | --- | --- |
+| **工厂方法** | 创建对象，隐藏实现细节 | `DeferredRegister.createItems()` |
+| **建造者** | 构建复杂对象，参数清晰 | `Item.Properties`、`CreativeModeTab.builder()` |
+| **单例** | 确保只有一个实例 | `BuiltInRegistries` |
+| **观察者** | 对象间松耦合通信 | 事件系统（`@SubscribeEvent`） |
+| **策略** | 运行时选择算法 | `Tier`（工具材料） |
+
+**学习建议：**
+
+1.  不需要死记硬背所有设计模式
+    
+2.  在阅读源码时识别这些模式
+    
+3.  理解为什么要用这个模式
+    
+4.  在自己的代码中适当使用
+    
+
+* * *
+
+## 3\. IntelliJ IDEA 完全指南
+
+### 3.1 IDEA 是什么？
+
+IntelliJ IDEA 是 JetBrains 公司开发的 Java 集成开发环境（IDE），是目前最流行的 Java 开发工具之一。
+
+**为什么选择 IDEA？**
+
+-   强大的代码补全和智能提示
+    
+-   内置 Gradle 支持，无需额外配置
+    
+-   优秀的调试工具
+    
+-   丰富的插件生态
+    
+-   对 Minecraft 模组开发友好
+    
+
+### 3.2 安装与配置
+
+#### 3.2.1 下载安装
+
+1.  访问 [JetBrains 官网](https://www.jetbrains.com/idea/download/)
+    
+2.  选择 **Community Edition**（社区版，免费）
+    
+3.  下载并安装
+    
+
+**首次启动配置：**
+
+-   选择主题（Darcula 暗色主题或 Light 亮色主题）
+    
+-   跳过插件安装（后续可以按需安装）
+    
+-   不导入设置（如果是第一次使用）
+    
+
+#### 3.2.2 配置 JDK
+
+1.  打开 IDEA
+    
+2.  点击 `File` → `Project Structure` → `SDKs`
+    
+3.  点击 `+` → `Add JDK`
+    
+4.  选择你安装的 JDK 目录（如 `C:\Program Files\Eclipse Adoptium\jdk-21.0.1.12-hotspot`）
+    
+5.  点击 `OK`
+    
+
+**验证 JDK 配置：**
+
+-   在 `Project Structure` → `Project` 中，确保 `SDK` 选择了正确的 JDK 版本
+    
+-   `Language level` 应该与 JDK 版本匹配（如 JDK 21 对应 `21`）
+    
+
+### 3.3 IDEA 界面布局
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  菜单栏 (File, Edit, View, Navigate, Code, Refactor...)    │
+├─────────────────────────────────────────────────────────────┤
+│  工具栏 (运行、调试、构建按钮)                                │
+├──────────┬──────────────────────────────────┬───────────────┤
+│          │                                  │               │
+│   项目   │        编辑器区域                   │   结构视图     │
+│  目录树  │     (代码编辑主区域)               │   (可选)      │
+│         │                                  │               │
+│  (左侧)  │                                  │   (右侧)      │
+│          │                                  │               │
+├──────────┴──────────────────────────────────┴───────────────┤
+│  底部工具窗口 (终端、运行、调试、TODO、问题等)                 │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**主要区域：**
+
+1.  **项目目录树（Project）**：显示项目文件结构
+    
+2.  **编辑器区域**：编写代码的主要区域
+    
+3.  **底部工具窗口**：终端、运行输出、调试信息等
+    
+4.  **右侧工具栏**：Gradle、Maven、数据库等工具
+    
+
+### 3.4 必备快捷键
+
+#### 3.4.1 导航快捷键
+
+| 快捷键 | 功能 | 说明 |
+| --- | --- | --- |
+| `Ctrl + N` | 查找类 | 快速打开任何类 |
+| `Ctrl + Shift + N` | 查找文件 | 快速打开任何文件 |
+| `Ctrl + E` | 最近文件 | 显示最近打开的文件列表 |
+| `Ctrl + B` | 跳转到定义 | 跳转到方法/类的定义处 |
+| `Ctrl + Alt + B` | 跳转到实现 | 跳转到接口的实现类 |
+| `Alt + F7` | 查找用法 | 查找方法/类在哪里被使用 |
+| `Ctrl + F12` | 文件结构 | 显示当前类的方法列表 |
+| `Ctrl + H` | 类型层次结构 | 显示类的继承关系 |
+
+**实战示例：**
+
+```
+场景：你想查看 Item 类的定义
+操作：
+1. 在代码中选中 "Item"
+2. 按 Ctrl + B
+3. IDEA 会跳转到 Item.class 文件
+```
+
+#### 3.4.2 编辑快捷键
+
+| 快捷键 | 功能 | 说明 |
+| --- | --- | --- |
+| `Ctrl + Space` | 基本代码补全 | 显示补全建议 |
+| `Ctrl + Shift + Space` | 智能代码补全 | 根据上下文智能补全 |
+| `Ctrl + /` | 单行注释 | 注释/取消注释当前行 |
+| `Ctrl + Shift + /` | 块注释 | 添加/移除块注释 |
+| `Ctrl + D` | 复制行 | 复制当前行到下一行 |
+| `Ctrl + Y` | 删除行 | 删除当前行 |
+| `Ctrl + Alt + L` | 格式化代码 | 自动格式化代码 |
+| `Alt + Enter` | 快速修复 | 显示修复建议（最重要！） |
+
+`Alt + Enter` **的强大功能：**
+
+```java
+// 场景1：自动导入类
+Item item;  // Item 显示红色波浪线
+// 按 Alt + Enter → 选择 "Import class" → 自动添加 import 语句
+
+// 场景2：创建缺失的方法
+myObject.nonExistentMethod();  // 方法不存在
+// 按 Alt + Enter → 选择 "Create method 'nonExistentMethod'" → 自动生成方法
+
+// 场景3：实现接口方法
+public class MyClass implements ItemLike {
+    // 类显示红色波浪线（未实现接口方法）
+    // 按 Alt + Enter → 选择 "Implement methods" → 自动生成所有接口方法
+}
+```
+
+#### 3.4.3 重构快捷键
+
+| 快捷键 | 功能 | 说明 |
+| --- | --- | --- |
+| `Shift + F6` | 重命名 | 重命名变量/方法/类（自动更新所有引用） |
+| `Ctrl + Alt + M` | 提取方法 | 将选中代码提取为方法 |
+| `Ctrl + Alt + V` | 提取变量 | 将表达式提取为变量 |
+| `Ctrl + Alt + C` | 提取常量 | 将值提取为常量 |
+| `Ctrl + Alt + F` | 提取字段 | 将局部变量提取为字段 |
+
+**实战示例：**
+
+```java
+// 场景：重命名变量
+int x = 10;  // 变量名不清晰
+// 选中 "x" → 按 Shift + F6 → 输入新名称 "maxStackSize" → Enter
+// IDEA 会自动更新所有使用 x 的地方
+
+// 场景：提取方法
+// 选中以下代码：
+if (stack.getDamageValue() >= stack.getMaxDamage()) {
+    return InteractionResultHolder.fail(stack);
+}
+// 按 Ctrl + Alt + M → 输入方法名 "isItemBroken" → Enter
+// IDEA 会自动创建方法并替换选中代码
+```
+
+#### 3.4.4 运行与调试快捷键
+
+| 快捷键 | 功能 | 说明 |
+| --- | --- | --- |
+| `Shift + F10` | 运行 | 运行当前配置 |
+| `Shift + F9` | 调试 | 以调试模式运行 |
+| `Ctrl + F2` | 停止 | 停止运行 |
+| `F8` | 单步跳过 | 执行下一行（不进入方法内部） |
+| `F7` | 单步进入 | 进入方法内部 |
+| `Shift + F8` | 单步跳出 | 跳出当前方法 |
+| `F9` | 恢复程序 | 继续运行到下一个断点 |
+| `Ctrl + F8` | 切换断点 | 在当前行添加/移除断点 |
+
+### 3.5 IDEA 核心功能详解
+
+#### 3.5.1 代码补全（Code Completion）
+
+IDEA 的代码补全是最强大的功能之一。
+
+**基本补全（Ctrl + Space）：**
+
+```java
+// 输入 "Sys" 然后按 Ctrl + Space
+System.out.println();  // IDEA 会自动补全
+
+// 输入 "sout" 然后按 Tab
+System.out.println();  // Live Template 快速生成
+
+// 输入 "fori" 然后按 Tab
+for (int i = 0; i < ; i++) {
+    
+}  // 自动生成 for 循环
+```
+
+**智能补全（Ctrl + Shift + Space）：**
+
+```java
+// 场景：需要传入 Item.Properties 参数
+public void registerItem(Item.Properties props) { }
+
+// 调用时输入：
+registerItem(  // 光标在这里，按 Ctrl + Shift + Space
+// IDEA 会智能建议：new Item.Properties()
+```
+
+**常用 Live Templates：**
+
+| 缩写 | 展开结果 | 说明 |
+| --- | --- | --- |
+| `sout` | `System.out.println();` | 打印输出 |
+| `psvm` | `public static void main(String[] args) {}` | 主方法 |
+| `fori` | `for (int i = 0; i < ; i++) {}` | for 循环 |
+| `iter` | `for (Type item : collection) {}` | for-each 循环 |
+| `ifn` | `if (var == null) {}` | null 检查 |
+| `inn` | `if (var != null) {}` | 非 null 检查 |
+
+#### 3.5.2 导航功能
+
+**跳转到定义（Ctrl + B）：**
+
+```java
+// 场景：你想查看 DeferredRegister 的源码
+DeferredRegister.Items ITEMS = DeferredRegister.createItems("yourmod");
+// 选中 "DeferredRegister" → 按 Ctrl + B → 跳转到类定义
+// 选中 "createItems" → 按 Ctrl + B → 跳转到方法定义
+```
+
+**查找用法（Alt + F7）：**
+
+```java
+// 场景：你想知道 MY_ITEM 在哪里被使用
+public static final DeferredItem<Item> MY_ITEM = ...;
+// 选中 "MY_ITEM" → 按 Alt + F7 → 显示所有使用位置
+```
+
+**文件结构（Ctrl + F12）：**
+
+按 `Ctrl + F12` 显示当前类的所有方法和字段，可以快速跳转。
+
+**类层次结构（Ctrl + H）：**
+
+```java
+// 场景：你想查看 Item 类的所有子类
+public class Item { }
+// 选中 "Item" → 按 Ctrl + H → 显示继承树
+```
+
+#### 3.5.3 重构功能
+
+**重命名（Shift + F6）：**
+
+这是最常用的重构操作，可以安全地重命名变量、方法、类，IDEA 会自动更新所有引用。
+
+```java
+// 场景：重命名类
+public class OldName { }  // 选中类名 → Shift + F6 → 输入新名称
+// IDEA 会：
+// 1. 重命名类
+// 2. 重命名文件
+// 3. 更新所有导入语句
+// 4. 更新所有使用位置
+```
+
+**提取方法（Ctrl + Alt + M）：**
+
+```java
+// 原始代码：
+public void processItem(ItemStack stack) {
+    if (stack.getDamageValue() >= stack.getMaxDamage()) {
+        player.sendSystemMessage(Component.literal("物品已损坏"));
+        return;
+    }
+    // 其他逻辑
+}
+
+// 选中 if 块 → Ctrl + Alt + M → 输入方法名 "checkItemDurability"
+// 结果：
+public void processItem(ItemStack stack) {
+    if (checkItemDurability(stack)) return;
+    // 其他逻辑
+}
+
+private boolean checkItemDurability(ItemStack stack) {
+    if (stack.getDamageValue() >= stack.getMaxDamage()) {
+        player.sendSystemMessage(Component.literal("物品已损坏"));
+        return true;
+    }
+    return false;
+}
+```
+
+**提取变量（Ctrl + Alt + V）：**
+
+```java
+// 原始代码：
+if (player.getInventory().getItem(0).getCount() > 10) { }
+
+// 选中 "player.getInventory().getItem(0)" → Ctrl + Alt + V
+// 结果：
+ItemStack firstItem = player.getInventory().getItem(0);
+if (firstItem.getCount() > 10) { }
+```
+
+#### 3.5.4 调试功能
+
+**设置断点：**
+
+1.  在代码行号左侧点击，或按 `Ctrl + F8`
+    
+2.  红色圆点表示断点已设置
+    
+3.  右键断点可以设置条件断点
+    
+
+**条件断点示例：**
+
+```java
+for (int i = 0; i < 100; i++) {
+    processItem(i);  // 在这行设置断点
+}
+// 右键断点 → 输入条件：i == 50
+// 程序只会在 i 等于 50 时暂停
+```
+
+**调试面板功能：**
+
+```
+调试时的界面：
+┌─────────────────────────────────────────┐
+│  Variables（变量）                       │
+│  ├─ this = MyClass@123                  │
+│  ├─ i = 50                              │
+│  └─ stack = ItemStack{item=apple}      │
+├─────────────────────────────────────────┤
+│  Watches（监视）                         │
+│  ├─ stack.getCount() = 10               │
+│  └─ player.getHealth() = 20.0           │
+├─────────────────────────────────────────┤
+│  Frames（调用栈）                        │
+│  ├─ processItem:15                      │
+│  ├─ use:42                              │
+│  └─ main:8                              │
+└─────────────────────────────────────────┘
+```
+
+**调试操作：**
+
+-   **F8（Step Over）**：执行当前行，不进入方法内部
+    
+-   **F7（Step Into）**：进入方法内部
+    
+-   **Shift + F8（Step Out）**：跳出当前方法
+    
+-   **F9（Resume）**：继续运行到下一个断点
+    
+-   **Alt + F9（Run to Cursor）**：运行到光标所在行
+    
+
+**Evaluate Expression（计算表达式）：**
+
+调试时按 `Alt + F8`，可以在当前上下文中执行任意代码：
+
+```java
+// 调试暂停时，按 Alt + F8
+// 输入：stack.getCount() * 2
+// 查看结果：20（如果 stack.getCount() 是 10）
+```
+
+#### 3.5.5 搜索功能
+
+**全局搜索（Ctrl + Shift + F）：**
+
+在整个项目中搜索文本。
+
+```
+场景：你想找到所有使用 "DeferredRegister" 的地方
+操作：Ctrl + Shift + F → 输入 "DeferredRegister" → Enter
+结果：显示所有包含该文本的文件和位置
+```
+
+**查找类（Ctrl + N）：**
+
+```
+输入：Item
+结果：显示所有名称包含 "Item" 的类
+技巧：输入驼峰缩写 "DR" 可以找到 "DeferredRegister"
+```
+
+**查找文件（Ctrl + Shift + N）：**
+
+```
+输入：build.gradle
+结果：快速打开 build.gradle 文件
+```
+
+**查找操作（Ctrl + Shift + A）：**
+
+搜索 IDEA 的所有功能和设置。
+
+```
+输入：format
+结果：显示所有与格式化相关的操作
+```
+
+### 3.6 项目结构理解
+
+#### 3.6.1 IDEA 项目视图
+
+**Project 视图（默认）：**
+
+```
+yourmod/
+├── .gradle/              ← Gradle 缓存（自动生成）
+├── .idea/                ← IDEA 配置（自动生成）
+├── build/                ← 编译输出（自动生成）
+├── gradle/               ← Gradle Wrapper
+├── src/
+│   ├── main/
+│   │   ├── java/         ← Java 源代码
+│   │   │   └── com/yourmod/
+│   │   │       ├── YourMod.java
+│   │   │       └── item/
+│   │   │           └── ModItems.java
+│   │   └── resources/    ← 资源文件
+│   │       ├── META-INF/
+│   │       │   └── neoforge.mods.toml
+│   │       └── assets/yourmod/
+│   │           ├── lang/
+│   │           ├── models/
+│   │           └── textures/
+│   └── generated/        ← 数据生成输出
+├── build.gradle          ← Gradle 构建脚本
+├── gradle.properties     ← Gradle 配置
+└── settings.gradle       ← Gradle 设置
+```
+
+**External Libraries（外部库）：**
+
+这里包含项目依赖的所有库，包括：
+
+-   JDK（Java 开发工具包）
+    
+-   NeoForge（模组框架）
+    
+-   Minecraft（游戏本体）
+    
+
+**查看源码的方法：**
+
+1.  展开 `External Libraries`
+    
+2.  找到 `neoforge-21.0.167-merged`
+    
+3.  展开后可以看到所有源码文件
+    
+4.  双击打开任何 `.java` 文件查看源码
+    
+
+#### 3.6.2 包（Package）的概念
+
+Java 使用包来组织代码，避免命名冲突。
+
+```java
+// 包声明（必须是文件第一行）
+package com.yourmod.item;
+
+// 导入其他包的类
+import net.minecraft.world.item.Item;
+import net.neoforged.neoforge.registries.DeferredRegister;
+
+public class ModItems {
+    // 类内容
+}
+```
+
+**包命名规范：**
+
+-   全部小写
+    
+-   使用反向域名：`com.yourname.modid`
+    
+-   按功能分包：`item`、`block`、`entity` 等
+    
+
+**导入规则：**
+
+-   同一个包内的类不需要导入
+    
+-   `java.lang` 包的类不需要导入（如 `String`、`System`）
+    
+-   其他包的类需要显式导入
+    
+
+### 3.7 IDEA 实用技巧
+
+#### 3.7.1 多光标编辑
+
+按住 `Alt` 并点击鼠标，可以创建多个光标：
+
+```java
+// 场景：批量修改变量名
+int item1 = 1;
+int item2 = 2;
+int item3 = 3;
+
+// 按住 Alt，点击三个 "item" → 同时编辑
+// 输入 "stack" → 三个变量同时改名
+int stack1 = 1;
+int stack2 = 2;
+int stack3 = 3;
+```
+
+#### 3.7.2 列选择模式
+
+按住 `Alt + Shift`，然后拖动鼠标，可以选择矩形区域：
+
+```java
+// 场景：批量添加注释
+public static final DeferredItem<Item> ITEM1 = ...;
+public static final DeferredItem<Item> ITEM2 = ...;
+public static final DeferredItem<Item> ITEM3 = ...;
+
+// Alt + Shift + 拖动选择 "public" 前面的空白
+// 输入 "// " → 批量添加注释
+```
+
+#### 3.7.3 书签功能
+
+**添加书签：**
+
+-   `F11` — 添加匿名书签
+    
+-   `Ctrl + F11` — 添加带编号的书签（0-9）
+    
+
+**跳转书签：**
+
+-   `Shift + F11` — 显示所有书签
+    
+-   `Ctrl + 数字` — 跳转到对应编号的书签
+    
+
+#### 3.7.4 TODO 注释
+
+IDEA 会自动识别 TODO 注释：
+
+```java
+// TODO: 实现物品的特殊效果
+public void specialEffect() {
+    
+}
+
+// FIXME: 修复耐久度计算错误
+public int getDurability() {
+    return 0;
+}
+```
+
+查看所有 TODO：点击底部工具栏的 `TODO` 标签。
+
+#### 3.7.5 代码折叠
+
+-   `Ctrl + NumPad +` — 展开当前代码块
+    
+-   `Ctrl + NumPad -` — 折叠当前代码块
+    
+-   `Ctrl + Shift + NumPad +` — 展开所有代码块
+    
+-   `Ctrl + Shift + NumPad -` — 折叠所有代码块
+    
+
+#### 3.7.6 Git 集成
+
+IDEA 内置 Git 支持：
+
+**初始化 Git 仓库：**
+
+1.  `VCS` → `Enable Version Control Integration`
+    
+2.  选择 `Git`
+    
+
+**提交更改：**
+
+1.  `Ctrl + K` — 打开提交窗口
+    
+2.  选择要提交的文件
+    
+3.  输入提交信息
+    
+4.  点击 `Commit`
+    
+
+**查看历史：**
+
+-   `Alt + 9` — 打开 Git 工具窗口
+    
+-   右键文件 → `Git` → `Show History`
+    
+
+* * *
+
+## 4\. Gradle 构建系统入门
+
+### 4.1 Gradle 是什么？
+
+Gradle 是一个构建自动化工具，用于：
+
+-   **编译代码**：将 `.java` 文件编译为 `.class` 文件
+    
+-   **管理依赖**：自动下载项目需要的库
+    
+-   **打包模组**：将代码和资源打包成 `.jar` 文件
+    
+-   **运行任务**：执行测试、生成数据等
+    
+
+**为什么 NeoForge 使用 Gradle？**
+
+-   Minecraft 模组开发需要复杂的构建流程
+    
+-   Gradle 可以自动处理反混淆、资源处理等任务
+    
+-   社区标准，所有现代模组都使用 Gradle
+    
+
+### 4.2 Gradle 项目结构
+
+```
+yourmod/
+├── build.gradle          ← 主构建脚本（最重要！）
+├── gradle.properties     ← 配置属性
+├── settings.gradle       ← 项目设置
+└── gradle/
+    └── wrapper/          ← Gradle Wrapper（确保版本一致）
+        ├── gradle-wrapper.jar
+        └── gradle-wrapper.properties
+```
+
+### 4.3 build.gradle 文件解析
+
+这是 NeoForge 模组的典型 `build.gradle` 文件：
+
+```groovy
+// 应用插件
+plugins {
+    id 'java-library'
+    id 'eclipse'
+    id 'idea'
+    id 'maven-publish'
+    id 'net.neoforged.gradle.userdev' version '7.0.80'
+}
+
+// 项目版本和组
+version = '1.0.0'
+group = 'com.yourmod'
+
+// Java 版本配置
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+// 依赖配置
+dependencies {
+    // NeoForge 依赖
+    implementation "net.neoforged:neoforge:${neo_version}"
+}
+
+// 运行配置
+runs {
+    client {
+        workingDirectory project.file('run')
+        systemProperty 'forge.logging.console.level', 'debug'
+    }
+    server {
+        workingDirectory project.file('run')
+        systemProperty 'forge.logging.console.level', 'debug'
+    }
+}
+```
+
+**关键配置项：**
+
+| 配置项 | 说明 |
+| --- | --- |
+| `plugins` | 应用的 Gradle 插件 |
+| `version` | 模组版本号 |
+| `group` | 模组的包名（通常是反向域名） |
+| `java.toolchain` | 指定 Java 版本 |
+| `dependencies` | 项目依赖的库 |
+| `runs` | 运行配置（客户端/服务端） |
+
+### 4.4 gradle.properties 文件
+
+```properties
+# Gradle 配置
+org.gradle.jvmargs=-Xmx4G
+org.gradle.daemon=true
+org.gradle.parallel=true
+
+# Mod 信息
+mod_id=yourmod
+mod_name=Your Mod
+mod_version=1.0.0
+mod_group_id=com.yourmod
+mod_author=YourName
+
+# 依赖版本
+minecraft_version=1.21
+neo_version=21.0.167
+```
+
+**重要配置：**
+
+-   `org.gradle.jvmargs=-Xmx4G` — 分配 4GB 内存给 Gradle（可根据电脑配置调整）
+    
+-   `minecraft_version` — Minecraft 版本
+    
+-   `neo_version` — NeoForge 版本
+    
+
+### 4.5 常用 Gradle 任务
+
+在 IDEA 右侧的 `Gradle` 工具窗口中，可以看到所有可用任务：
+
+| 任务 | 命令 | 说明 |
+| --- | --- | --- |
+| **build** | `./gradlew build` | 编译并打包模组 |
+| **clean** | `./gradlew clean` | 清理构建输出 |
+| **runClient** | `./gradlew runClient` | 启动客户端测试 |
+| **runServer** | `./gradlew runServer` | 启动服务端测试 |
+| **runData** | `./gradlew runData` | 运行数据生成 |
+
+**在 IDEA 中运行任务：**
+
+1.  打开右侧 `Gradle` 工具窗口
+    
+2.  展开 `Tasks` → 选择任务类别
+    
+3.  双击任务运行
+    
+
+**在终端中运行任务：**
+
+```bash
+# Windows
+gradlew build
+
+# Linux/Mac
+./gradlew build
+```
+
+### 4.6 依赖管理
+
+Gradle 会自动下载项目依赖。依赖存储在：
+
+-   Windows: `C:\Users\你的用户名\.gradle\caches\`
+    
+-   Linux/Mac: `~/.gradle/caches/`
+    
+
+**添加依赖：**
+
+```groovy
+dependencies {
+    // NeoForge（必需）
+    implementation "net.neoforged:neoforge:${neo_version}"
+    
+    // 添加其他模组作为依赖（可选）
+    // implementation fg.deobf("curse.maven:jei-238222:4567890")
+}
+```
+
+**刷新依赖：**
+
+-   IDEA 右上角会出现 Gradle 图标，点击刷新
+    
+-   或在 Gradle 工具窗口中点击刷新按钮
+    
+
+* * *
+
+## 5\. NeoForge 开发环境搭建
+
+### 5.1 获取 NeoForge MDK
+
+**MDK（Mod Development Kit）** 是 NeoForge 提供的模组开发模板项目。
+
+**下载方式：**
+
+1.  访问 [NeoForge 官网](https://neoforged.net/)
+    
+2.  点击 `Download` → 选择对应的 Minecraft 版本（如 1.21）
+    
+3.  下载 `MDK` 压缩包
+    
+4.  解压到你的工作目录（如 `D:\ModDev\MyFirstMod`）
+    
+
+**或者使用 Git 克隆：**
+
+```bash
+git clone https://github.com/neoforged/MDK.git MyFirstMod
+cd MyFirstMod
+```
+
+### 5.2 导入项目到 IDEA
+
+**步骤：**
+
+1.  打开 IDEA
+    
+2.  点击 `File` → `Open`
+    
+3.  选择 MDK 解压后的文件夹
+    
+4.  点击 `OK`
+    
+
+**首次导入会发生什么：**
+
+IDEA 会自动：
+
+1.  识别这是一个 Gradle 项目
+    
+2.  下载 Gradle Wrapper（如果没有）
+    
+3.  下载项目依赖（NeoForge、Minecraft 等）
+    
+4.  反混淆 Minecraft 代码
+    
+5.  生成运行配置
+    
+
+**这个过程可能需要 10-30 分钟**，取决于网络速度和电脑性能。
+
+**进度查看：**
+
+-   IDEA 底部会显示进度条
+    
+-   可以点击进度条查看详细信息
+    
+
+### 5.3 首次构建
+
+导入完成后，执行首次构建：
+
+**方法一：使用 Gradle 工具窗口**
+
+1.  打开右侧 `Gradle` 工具窗口
+    
+2.  展开 `Tasks` → `build`
+    
+3.  双击 `build` 任务
+    
+
+**方法二：使用终端**
+
+```bash
+# Windows
+gradlew build
+
+# Linux/Mac
+./gradlew build
+```
+
+**如果构建成功：**
+
+```
+BUILD SUCCESSFUL in 2m 15s
+```
+
+**如果构建失败：**
+
+-   检查 JDK 版本是否正确（必须是 Java 21+）
+    
+-   检查网络连接（需要下载依赖）
+    
+-   查看错误信息，搜索解决方案
+    
+
+### 5.4 配置运行环境
+
+#### 5.4.1 生成运行配置
+
+NeoForge Gradle 插件会自动生成运行配置，但有时需要手动刷新：
+
+```bash
+# 生成 IDEA 运行配置
+gradlew ideaSyncTask
+```
+
+#### 5.4.2 运行客户端
+
+**方法一：使用 IDEA 运行配置**
+
+1.  点击 IDEA 右上角的运行配置下拉菜单
+    
+2.  选择 `runClient`
+    
+3.  点击绿色运行按钮（或按 `Shift + F10`）
+    
+
+**方法二：使用 Gradle 任务**
+
+1.  打开 Gradle 工具窗口
+    
+2.  展开 `Tasks` → `runs`
+    
+3.  双击 `runClient`
+    
+
+**首次运行会：**
+
+1.  生成运行目录（`run/`）
+    
+2.  创建 Minecraft 配置文件
+    
+3.  启动 Minecraft 客户端
+    
+
+**成功标志：**
+
+-   Minecraft 主菜单出现
+    
+-   左下角显示 `Mods: 1` 或类似信息
+    
+-   点击 `Mods` 按钮可以看到你的模组
+    
+
+#### 5.4.3 运行服务端
+
+```bash
+gradlew runServer
+```
+
+服务端会在终端中运行，输入 `stop` 可以停止服务器。
+
+### 5.5 项目结构详解
+
+导入后的项目结构：
+
+```
+MyFirstMod/
+├── .gradle/                    ← Gradle 缓存
+├── .idea/                      ← IDEA 配置
+├── build/                      ← 编译输出
+│   └── libs/
+│       └── myfirstmod-1.0.jar  ← 打包后的模组文件
+├── gradle/                     ← Gradle Wrapper
+├── run/                        ← 运行时目录（首次运行后生成）
+│   ├── logs/                   ← 游戏日志
+│   ├── saves/                  ← 存档
+│   └── config/                 ← 配置文件
+├── src/
+│   ├── main/
+│   │   ├── java/
+│   │   │   └── com/example/examplemod/
+│   │   │       └── ExampleMod.java  ← 模组主类
+│   │   └── resources/
+│   │       ├── META-INF/
+│   │       │   └── neoforge.mods.toml  ← 模组元数据
+│   │       ├── pack.mcmeta     ← 资源包元数据
+│   │       └── assets/examplemod/
+│   │           └── ...         ← 资源文件
+│   └── generated/              ← 数据生成输出
+├── build.gradle                ← 构建脚本
+├── gradle.properties           ← Gradle 配置
+├── settings.gradle             ← 项目设置
+└── README.md                   ← 说明文档
+```
+
+### 5.6 修改模组信息
+
+#### 5.6.1 修改 gradle.properties
+
+```properties
+# 修改这些值为你的模组信息
+mod_id=yourmod
+mod_name=Your Mod Name
+mod_version=1.0.0
+mod_group_id=com.yourname.yourmod
+mod_author=YourName
+mod_description=A cool mod that does cool things
+```
+
+#### 5.6.2 修改 neoforge.mods.toml
+
+```toml
+# src/main/resources/META-INF/neoforge.mods.toml
+
+modLoader="javafml"
+loaderVersion="[4,)"
+license="MIT"
+
+[[mods]]
+modId="yourmod"
+version="${file.jarVersion}"
+displayName="Your Mod Name"
+description='''
+A cool mod that does cool things.
+'''
+authors="YourName"
+displayURL="https://github.com/yourname/yourmod"
+
+[[dependencies.yourmod]]
+    modId="neoforge"
+    type="required"
+    versionRange="[21.0,)"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies.yourmod]]
+    modId="minecraft"
+    type="required"
+    versionRange="[1.21,)"
+    ordering="NONE"
+    side="BOTH"
+```
+
+**重要字段：**
+
+-   `modId` — 模组 ID（必须与 `gradle.properties` 中一致）
+    
+-   `version` — 模组版本
+    
+-   `displayName` — 显示名称
+    
+-   `dependencies` — 依赖关系
+    
+
+#### 5.6.3 重命名包和类
+
+1.  右键 `com.example.examplemod` 包
+    
+2.  选择 `Refactor` → `Rename`
+    
+3.  输入新包名（如 `com.yourname.yourmod`）
+    
+4.  勾选 `Search in comments and strings`
+    
+5.  点击 `Refactor`
+    
+
+### 5.7 常见问题排查
+
+#### 5.7.1 Gradle 同步失败
+
+**问题：** `Could not resolve all dependencies`
+
+**解决方案：**
+
+1.  检查网络连接
+    
+2.  尝试使用国内镜像（在 `build.gradle` 中添加）：
+    
+
+```groovy
+repositories {
+    maven { url 'https://maven.aliyun.com/repository/public/' }
+    mavenCentral()
+}
+```
+
+#### 5.7.2 JDK 版本不匹配
+
+**问题：** `Unsupported class file major version`
+
+**解决方案：**
+
+1.  确认安装了 Java 21+
+    
+2.  在 IDEA 中设置正确的 JDK：
+    
+    -   `File` → `Project Structure` → `Project`
+        
+    -   设置 `SDK` 为 Java 21
+        
+
+#### 5.7.3 运行配置缺失
+
+**问题：** 右上角没有 `runClient` 配置
+
+**解决方案：**
+
+```bash
+# 重新生成运行配置
+gradlew ideaSyncTask
+```
+
+然后重启 IDEA。
+
+#### 5.7.4 内存不足
+
+**问题：** `OutOfMemoryError: Java heap space`
+
+**解决方案：**
+
+在 `gradle.properties` 中增加内存：
+
+```properties
+org.gradle.jvmargs=-Xmx6G
+```
+
+* * *
+
+## 6\. 阅读和理解源码的方法论
+
+### 6.1 为什么要阅读源码？
+
+模组开发的本质是**扩展和修改 Minecraft 的行为**。要做到这一点，你必须：
+
+1.  理解 Minecraft 和 NeoForge 的工作原理
+    
+2.  知道如何正确使用 API
+    
+3.  学习最佳实践
+    
+
+**源码是最好的文档**，因为：
+
+-   官方文档可能过时或不完整
+    
+-   源码永远是最新的
+    
+-   源码包含实现细节和注释
+    
+
+### 6.2 如何在 IDEA 中查看源码
+
+#### 6.2.1 跳转到定义
+
+```java
+// 场景：你想查看 Item 类的源码
+Item myItem = new Item(new Item.Properties());
+// 选中 "Item" → 按 Ctrl + B → 跳转到 Item.class
+```
+
+#### 6.2.2 查看类的层次结构
+
+```java
+// 场景：你想知道 Item 有哪些子类
+// 选中 "Item" → 按 Ctrl + H → 显示继承树
+```
+
+#### 6.2.3 查找用法
+
+```java
+// 场景：你想知道某个方法在哪里被调用
+// 选中方法名 → 按 Alt + F7 → 显示所有调用位置
+```
+
+### 6.3 阅读源码的步骤
+
+#### 步骤 1：从类的 Javadoc 开始
+
+每个类顶部的 `/** ... */` 注释是 Javadoc，它会告诉你这个类的用途。
+
+从 `DeferredRegister.java` 的例子：
+
+```java
+/**
+ * A helper class to aid in registering objects to modded and
+ * {@linkplain BuiltInRegistries vanilla registries} and
+ * provide deferred suppliers to access those objects.
+ * 
+ * <p>This class is designed to be used as a static field in your mod class.
+ * ...
+ */
+public class DeferredRegister<T> {
+```
+
+**关键信息：**
+
+-   这是一个辅助类
+    
+-   用于注册对象到注册表
+    
+-   应该作为静态字段使用
+    
+
+#### 步骤 2：查看静态工厂方法
+
+大多数 NeoForge 类不让你直接 `new`，而是通过静态方法创建：
+
+```java
+// 在 DeferredRegister.java 中
+public static DeferredRegister.Items createItems(String modid) {
+    return new Items(modid);
+}
+```
+
+**这告诉你：** 创建 `DeferredRegister.Items` 的正确方式是调用 `createItems()`。
+
+#### 步骤 3：查看构造函数
+
+```java
+// DeferredItem.java
+protected DeferredItem(ResourceKey<Item> key) {
+    super(key);
+}
+```
+
+`protected` **意味着：** 你不能直接 `new DeferredItem()`，必须通过其他方式创建。
+
+#### 步骤 4：查看公开方法
+
+公开方法（`public`）是你可以调用的 API：
+
+```java
+// DeferredRegister.java
+public <I extends T> DeferredHolder<T, I> register(String name, Supplier<? extends I> sup) {
+    // 实现
+}
+```
+
+**方法签名告诉你：**
+
+-   参数：`name`（字符串）和 `sup`（Supplier）
+    
+-   返回值：`DeferredHolder<T, I>`
+    
+
+#### 步骤 5：查看示例代码
+
+Javadoc 中通常包含示例代码：
+
+```java
+/**
+ * Example usage:
+ * <pre>{@code
+ * private static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(MODID);
+ * public static final DeferredItem<Item> MY_ITEM = ITEMS.registerSimpleItem("my_item");
+ * }</pre>
+ */
+```
+
+**这是最直接的学习方式**，直接复制示例代码并修改。
+
+### 6.4 理解方法签名
+
+方法签名包含大量信息：
+
+```java
+public <I extends T> DeferredHolder<T, I> register(
+    final String name, 
+    final Supplier<? extends I> sup
+)
+```
+
+**逐部分解析：**
+
+1.  `public` — 访问修饰符，表示可以在任何地方调用
+    
+2.  `<I extends T>` — 泛型参数，`I` 必须是 `T` 的子类
+    
+3.  `DeferredHolder<T, I>` — 返回类型
+    
+4.  `register` — 方法名
+    
+5.  `final String name` — 第一个参数，`final` 表示不可修改
+    
+6.  `final Supplier<? extends I> sup` — 第二个参数，Supplier 类型
+    
+
+`Supplier<? extends I>` **的含义：**
+
+-   `Supplier` — 函数式接口，提供一个对象
+    
+-   `? extends I` — 通配符，表示任何 `I` 的子类
+    
+
+**实际使用：**
+
+```java
+// Supplier 可以用 Lambda 表达式
+ITEMS.register("my_item", () -> new Item(new Item.Properties()));
+
+// 或者方法引用
+ITEMS.register("my_item", () -> new MySword(new Item.Properties()));
+```
+
+### 6.5 追踪调用链
+
+理解一个功能的完整流程，需要追踪方法调用链。
+
+**示例：注册物品的完整流程**
+
+```java
+// 1. 你的代码
+ITEMS.registerSimpleItem("my_item");
+
+// 2. registerSimpleItem 调用 registerItem
+public DeferredItem<Item> registerSimpleItem(String name) {
+    return this.registerItem(name, Item::new);
+}
+
+// 3. registerItem 调用 register
+public <I extends Item> DeferredItem<I> registerItem(String name, Function<Item.Properties, I> func) {
+    return this.register(name, () -> func.apply(new Item.Properties()));
+}
+
+// 4. register 创建 DeferredHolder 并存储
+public <I extends T> DeferredHolder<T, I> register(String name, Supplier<? extends I> sup) {
+    DeferredHolder<T, I> ret = createHolder(this.registryKey, key);
+    entries.putIfAbsent(ret, sup);
+    return ret;
+}
+```
+
+**追踪方法：**
+
+1.  选中方法名 → `Ctrl + B` → 跳转到定义
+    
+2.  查看方法内部调用了哪些方法
+    
+3.  继续跳转，直到理解整个流程
+    
+
+### 6.6 理解注解（Annotations）
+
+注解提供元数据，影响代码行为。
+
+**常见注解：**
+
+```java
+@Override  // 表示重写父类方法
+public void use() { }
+
+@Nullable  // 表示返回值可能为 null
+public Item getItem() { }
+
+@NotNull  // 表示参数不能为 null
+public void setItem(@NotNull Item item) { }
+
+@Deprecated  // 表示方法已过时，不推荐使用
+public void oldMethod() { }
+```
+
+**NeoForge 特有注解：**
+
+```java
+@Mod("yourmod")  // 标记模组主类
+public class YourMod { }
+
+@EventBusSubscriber  // 自动注册事件监听器
+public class EventHandler { }
+
+@OnlyIn(Dist.CLIENT)  // 仅在客户端执行
+public void clientOnlyMethod() { }
+```
+
+* * *
+
+## 7\. 模组开发核心概念
+
+### 7.1 注册系统（Registry System）
+
+#### 7.1.1 什么是注册表？
+
+Minecraft 使用**注册表（Registry）**来管理所有游戏对象：
+
+```
+注册表类型：
+├── ITEM（物品）
+├── BLOCK（方块）
+├── ENTITY_TYPE（实体类型）
+├── SOUND_EVENT（声音事件）
+├── PARTICLE_TYPE（粒子类型）
+└── ... 还有很多
+```
+
+每个对象都有一个唯一的 **ResourceLocation**（资源位置）：
+
+```
+格式：命名空间:路径
+示例：minecraft:diamond
+      yourmod:my_item
+```
+
+#### 7.1.2 为什么需要延迟注册？
+
+**问题：** 游戏启动时，各个模组的加载顺序不确定。如果你在错误的时间注册对象，游戏会崩溃。
+
+**解决方案：** NeoForge 的 `DeferredRegister` 系统：
+
+```java
+// 第一步：创建 DeferredRegister（模组加载时）
+public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems("yourmod");
+
+// 第二步：注册对象（类加载时）
+public static final DeferredItem<Item> MY_ITEM = ITEMS.registerSimpleItem("my_item");
+
+// 第三步：将 DeferredRegister 绑定到事件总线（模组构造函数中）
+public YourMod(IEventBus modEventBus) {
+    ITEMS.register(modEventBus);
+}
+
+// 第四步：NeoForge 在正确的时间触发 RegisterEvent，实际创建对象
+```
+
+**关键点：**
+
+-   `registerSimpleItem()` 只是记录"要注册什么"
+    
+-   实际对象在 `RegisterEvent` 触发时才创建
+    
+-   这确保了注册顺序的正确性
+    
+
+#### 7.1.3 DeferredHolder 的作用
+
+`DeferredHolder` 是一个"占位符"，它会在注册完成后指向实际对象：
+
+```java
+public static final DeferredItem<Item> MY_ITEM = ITEMS.registerSimpleItem("my_item");
+
+// 在注册完成前
+MY_ITEM.get();  // 可能返回 null 或抛出异常
+
+// 在注册完成后
+MY_ITEM.get();  // 返回实际的 Item 对象
+```
+
+**使用场景：**
+
+```java
+// 在配方中引用物品
+public void createRecipe(RecipeOutput output) {
+    ShapedRecipeBuilder.shaped(RecipeCategory.TOOLS, MY_ITEM.get())
+        .pattern("###")
+        .pattern(" | ")
+        .pattern(" | ")
+        .define('#', Items.DIAMOND)
+        .define('|', Items.STICK)
+        .save(output);
+}
+```
+
+### 7.2 事件系统（Event System）
+
+#### 7.2.1 什么是事件？
+
+事件是游戏中发生的特定动作，如：
+
+-   玩家右键点击
+    
+-   实体受到伤害
+    
+-   方块被破坏
+    
+-   物品被合成
+    
+
+NeoForge 允许你**监听**这些事件并执行自定义代码。
+
+#### 7.2.2 两种事件总线
+
+**1\. Mod 事件总线（Mod Event Bus）**
+
+用于模组生命周期事件：
+
+```java
+@Mod("yourmod")
+public class YourMod {
+    public YourMod(IEventBus modEventBus) {
+        // 监听注册事件
+        modEventBus.addListener(this::onRegister);
+        
+        // 监听客户端设置事件
+        modEventBus.addListener(this::onClientSetup);
+    }
+    
+    private void onRegister(RegisterEvent event) {
+        // 注册对象
+    }
+    
+    private void onClientSetup(FMLClientSetupEvent event) {
+        // 客户端初始化
+    }
+}
+```
+
+**2\. 游戏事件总线（Game Event Bus）**
+
+用于游戏运行时事件：
+
+```java
+@EventBusSubscriber(modid = "yourmod")
+public class EventHandler {
+    
+    @SubscribeEvent
+    public static void onPlayerInteract(PlayerInteractEvent.RightClickItem event) {
+        // 玩家右键物品时触发
+        Player player = event.getEntity();
+        ItemStack stack = event.getItemStack();
+        
+        if (stack.is(ModItems.MY_ITEM.get())) {
+            player.sendSystemMessage(Component.literal("你使用了我的物品！"));
+        }
+    }
+    
+    @SubscribeEvent
+    public static void onLivingHurt(LivingHurtEvent event) {
+        // 实体受伤时触发
+        if (event.getEntity() instanceof Player player) {
+            // 玩家受伤时的逻辑
+        }
+    }
+}
+```
+
+**关键区别：**
+
+| 特性 | Mod 事件总线 | 游戏事件总线 |
+| --- | --- | --- |
+| 获取方式 | 构造函数参数 | `NeoForge.EVENT_BUS` |
+| 事件类型 | 模组生命周期 | 游戏运行时 |
+| 注册方式 | `modEventBus.addListener()` | `@EventBusSubscriber` + `@SubscribeEvent` |
+| 示例事件 | `RegisterEvent`、`FMLClientSetupEvent` | `PlayerInteractEvent`、`LivingHurtEvent` |
+
+#### 7.2.3 事件的优先级
+
+可以设置事件监听器的优先级：
+
+```java
+@SubscribeEvent(priority = EventPriority.HIGH)
+public static void onPlayerInteract(PlayerInteractEvent event) {
+    // 高优先级，会比其他监听器先执行
+}
+```
+
+**优先级顺序：**`HIGHEST` → `HIGH` → `NORMAL`（默认）→ `LOW` → `LOWEST`
+
+#### 7.2.4 取消事件
+
+某些事件可以被取消：
+
+```java
+@SubscribeEvent
+public static void onBlockBreak(BlockEvent.BreakEvent event) {
+    // 阻止玩家破坏钻石矿
+    if (event.getState().is(Blocks.DIAMOND_ORE)) {
+        event.setCanceled(true);
+        event.getPlayer().sendSystemMessage(Component.literal("你不能破坏钻石矿！"));
+    }
+}
+```
+
+**注意：** 只有标记为 `@Cancelable` 的事件才能被取消。
+
+### 7.3 资源位置（ResourceLocation）
+
+`ResourceLocation` 是 Minecraft 中标识资源的方式：
+
+```java
+// 创建 ResourceLocation
+ResourceLocation loc1 = ResourceLocation.fromNamespaceAndPath("yourmod", "my_item");
+ResourceLocation loc2 = ResourceLocation.parse("yourmod:my_item");  // 等价
+
+// 获取命名空间和路径
+String namespace = loc1.getNamespace();  // "yourmod"
+String path = loc1.getPath();            // "my_item"
+
+// 转换为字符串
+String str = loc1.toString();  // "yourmod:my_item"
+```
+
+**使用场景：**
+
+```java
+// 注册物品时自动创建 ResourceLocation
+ITEMS.registerSimpleItem("my_item");  // 内部创建 "yourmod:my_item"
+
+// 引用原版物品
+Item diamond = BuiltInRegistries.ITEM.get(ResourceLocation.withDefaultNamespace("diamond"));
+
+// 加载贴图
+ResourceLocation texture = ResourceLocation.fromNamespaceAndPath("yourmod", "textures/item/my_item.png");
+```
+
+### 7.4 客户端与服务端
+
+Minecraft 分为**客户端（Client）和服务端（Server）**：
+
+```
+单人游戏：
+┌─────────────┐
+│   客户端     │ ← 渲染、输入、声音
+│   +         │
+│   服务端     │ ← 游戏逻辑、世界管理
+└─────────────┘
+
+多人游戏：
+┌─────────────┐          ┌─────────────┐
+│   客户端     │ ←网络→  │   服务端     │
+│  (玩家1)    │          │  (专用服务器) │
+└─────────────┘          └─────────────┘
+       ↑
+       网络
+       ↓
+┌─────────────┐
+│   客户端     │
+│  (玩家2)    │
+└─────────────┘
+```
+
+**重要原则：**
+
+-   **逻辑代码**应该在服务端执行
+    
+-   **渲染代码**只能在客户端执行
+    
+-   使用 `level.isClientSide()` 判断当前环境
+    
+
+```java
+@Override
+public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
+    if (!level.isClientSide()) {
+        // 服务端逻辑
+        player.sendSystemMessage(Component.literal("服务端消息"));
+    } else {
+        // 客户端逻辑（通常用于渲染或声音）
+        // 注意：不要在这里修改游戏状态！
+    }
+    return InteractionResultHolder.success(player.getItemInHand(hand));
+}
+```
+
+**仅客户端代码：**
+
+```java
+@OnlyIn(Dist.CLIENT)
+public class ClientHandler {
+    public static void registerRenderers() {
+        // 注册渲染器
+    }
+}
+```
+
+### 7.5 数据生成（Data Generation）
+
+数据生成允许你用 Java 代码生成 JSON 文件（模型、配方、标签等）。
+
+**为什么使用数据生成？**
+
+-   避免手写大量重复的 JSON
+    
+-   类型安全，编译时检查错误
+    
+-   易于维护和批量修改
+    
+
+**示例：生成物品模型**
+
+```java
+public class ModItemModelProvider extends ItemModelProvider {
+    public ModItemModelProvider(PackOutput output, ExistingFileHelper existingFileHelper) {
+        super(output, "yourmod", existingFileHelper);
+    }
+    
+    @Override
+    protected void registerModels() {
+        // 生成简单物品模型
+        basicItem(ModItems.MY_ITEM.get());
+        
+        // 生成手持工具模型
+        handheldItem(ModItems.MY_SWORD.get());
+    }
+}
+```
+
+**运行数据生成：**
+
+```bash
+gradlew runData
+```
+
+生成的文件会保存在 `src/generated/resources/` 目录。
+
+* * *
+
+## 8\. 实战：创建第一个模组项目
+
+### 8.1 项目规划
+
+我们将创建一个简单的模组，包含：
+
+1.  一个自定义物品（红宝石）
+    
+2.  一个自定义工具（红宝石剑）
+    
+3.  物品的贴图和模型
+    
+4.  中文翻译
+    
+
+### 8.2 创建项目结构
+
+**步骤 1：导入 NeoForge MDK**
+
+按照第 5 章的步骤导入 MDK。
+
+**步骤 2：修改模组信息**
+
+编辑 `gradle.properties`：
+
+```properties
+mod_id=rubymod
+mod_name=Ruby Mod
+mod_version=1.0.0
+mod_group_id=com.example.rubymod
+mod_author=YourName
+```
+
+编辑 `src/main/resources/META-INF/neoforge.mods.toml`：
+
+```toml
+modId="rubymod"
+displayName="Ruby Mod"
+description="Adds rubies to Minecraft"
+authors="YourName"
+```
+
+**步骤 3：重命名包**
+
+1.  右键 `com.example.examplemod` 包
+    
+2.  `Refactor` → `Rename`
+    
+3.  输入 `com.example.rubymod`
+    
+
+**步骤 4：重命名主类**
+
+1.  右键 `ExampleMod.java`
+    
+2.  `Refactor` → `Rename`
+    
+3.  输入 `RubyMod`
+    
+
+### 8.3 注册物品
+
+**创建物品注册类：**
+
+```java
+// src/main/java/com/example/rubymod/item/ModItems.java
+package com.example.rubymod.item;
+
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.SwordItem;
+import net.minecraft.world.item.Tiers;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.registries.DeferredItem;
+import net.neoforged.neoforge.registries.DeferredRegister;
+
+public class ModItems {
+    // 创建 DeferredRegister
+    public static final DeferredRegister.Items ITEMS = 
+        DeferredRegister.createItems("rubymod");
+    
+    // 注册红宝石物品
+    public static final DeferredItem<Item> RUBY = 
+        ITEMS.registerSimpleItem("ruby", new Item.Properties());
+    
+    // 注册红宝石剑
+    public static final DeferredItem<SwordItem> RUBY_SWORD = 
+        ITEMS.registerItem("ruby_sword", 
+            props -> new SwordItem(Tiers.DIAMOND, 3, -2.4f, props),
+            new Item.Properties());
+    
+    // 注册方法
+    public static void register(IEventBus modEventBus) {
+        ITEMS.register(modEventBus);
+    }
+}
+```
+
+**在主类中调用注册：**
+
+```java
+// src/main/java/com/example/rubymod/RubyMod.java
+package com.example.rubymod;
+
+import com.example.rubymod.item.ModItems;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.common.Mod;
+
+@Mod("rubymod")
+public class RubyMod {
+    public RubyMod(IEventBus modEventBus) {
+        // 注册物品
+        ModItems.register(modEventBus);
+    }
+}
+```
+
+### 8.4 添加到创造模式物品栏
+
+```java
+// src/main/java/com/example/rubymod/RubyMod.java
+package com.example.rubymod;
+
+import com.example.rubymod.item.ModItems;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.world.item.CreativeModeTabs;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.neoforge.registries.DeferredHolder;
+import net.neoforged.neoforge.registries.DeferredRegister;
+
+@Mod("rubymod")
+public class RubyMod {
+    // 创建创造模式标签页注册器
+    public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS = 
+        DeferredRegister.create(Registries.CREATIVE_MODE_TAB, "rubymod");
+    
+    // 注册自定义标签页
+    public static final DeferredHolder<CreativeModeTab, CreativeModeTab> RUBY_TAB = 
+        CREATIVE_MODE_TABS.register("ruby_tab", () -> CreativeModeTab.builder()
+            .title(Component.translatable("itemGroup.rubymod.ruby_tab"))
+            .icon(() -> ModItems.RUBY.get().getDefaultInstance())
+            .displayItems((parameters, output) -> {
+                // 添加物品到标签页
+                output.accept(ModItems.RUBY.get());
+                output.accept(ModItems.RUBY_SWORD.get());
+            })
+            .build());
+    
+    public RubyMod(IEventBus modEventBus) {
+        ModItems.register(modEventBus);
+        CREATIVE_MODE_TABS.register(modEventBus);
+    }
+}
+```
+
+### 8.5 创建资源文件
+
+#### 8.5.1 物品模型
+
+**红宝石模型：**
+
+```json
+// src/main/resources/assets/rubymod/models/item/ruby.json
+{
+    "parent": "minecraft:item/generated",
+    "textures": {
+        "layer0": "rubymod:item/ruby"
+    }
+}
+```
+
+**红宝石剑模型：**
+
+```json
+// src/main/resources/assets/rubymod/models/item/ruby_sword.json
+{
+    "parent": "minecraft:item/handheld",
+    "textures": {
+        "layer0": "rubymod:item/ruby_sword"
+    }
+}
+```
+
+#### 8.5.2 贴图文件
+
+创建 16×16 像素的 PNG 文件：
+
+```
+src/main/resources/assets/rubymod/textures/item/
+├── ruby.png          ← 红宝石贴图
+└── ruby_sword.png    ← 红宝石剑贴图
+```
+
+**制作贴图的工具：**
+
+-   [Blockbench](https://www.blockbench.net/)（推荐）
+    
+-   [Aseprite](https://www.aseprite.org/)
+    
+-   GIMP 或 Photoshop
+    
+
+#### 8.5.3 语言文件
+
+**中文翻译：**
+
+```json
+// src/main/resources/assets/rubymod/lang/zh_cn.json
+{
+    "item.rubymod.ruby": "红宝石",
+    "item.rubymod.ruby_sword": "红宝石剑",
+    "itemGroup.rubymod.ruby_tab": "红宝石模组"
+}
+```
+
+**英文翻译：**
+
+```json
+// src/main/resources/assets/rubymod/lang/en_us.json
+{
+    "item.rubymod.ruby": "Ruby",
+    "item.rubymod.ruby_sword": "Ruby Sword",
+    "itemGroup.rubymod.ruby_tab": "Ruby Mod"
+}
+```
+
+### 8.6 测试模组
+
+**步骤 1：构建项目**
+
+```bash
+gradlew build
+```
+
+**步骤 2：运行客户端**
+
+在 IDEA 中选择 `runClient` 配置，点击运行。
+
+**步骤 3：验证**
+
+1.  进入游戏
+    
+2.  打开创造模式物品栏
+    
+3.  找到"红宝石模组"标签页
+    
+4.  检查红宝石和红宝石剑是否显示正确
+    
+
+**步骤 4：测试功能**
+
+1.  拿起红宝石剑
+    
+2.  攻击生物，验证伤害值
+    
+3.  检查耐久度是否正常消耗
+    
+
+### 8.7 打包发布
+
+**生成模组 JAR 文件：**
+
+```bash
+gradlew build
+```
+
+生成的文件位于：`build/libs/rubymod-1.0.0.jar`
+
+**测试 JAR 文件：**
+
+1.  将 JAR 文件复制到 Minecraft 的 `mods` 文件夹
+    
+2.  启动游戏
+    
+3.  验证模组是否正常工作
+    
+
+### 8.8 常见错误排查
+
+#### 8.8.1 物品不显示
+
+**可能原因：**
+
+1.  模型文件路径错误
+    
+2.  贴图文件缺失
+    
+3.  物品未添加到创造模式标签页
+    
+
+**排查步骤：**
+
+1.  检查文件路径是否正确（区分大小写）
+    
+2.  查看游戏日志（`run/logs/latest.log`）
+    
+3.  搜索错误信息：`Missing texture` 或 `Model not found`
+    
+
+#### 8.8.2 游戏崩溃
+
+**可能原因：**
+
+1.  注册时机错误
+    
+2.  空指针异常（`NullPointerException`）
+    
+3.  类加载错误
+    
+
+**排查步骤：**
+
+1.  查看崩溃报告（`crash-reports/` 文件夹）
+    
+2.  找到 `Caused by:` 行，查看具体错误
+    
+3.  根据错误信息搜索解决方案
+    
+
+#### 8.8.3 物品名称显示为 ID
+
+**原因：** 缺少语言文件或翻译键错误
+
+**解决方案：**
+
+1.  检查 `lang/zh_cn.json` 是否存在
+    
+2.  验证翻译键格式：`item.{modid}.{item_id}`
+    
+3.  确保文件编码为 UTF-8
+    
+
+* * *
+
+## 总结与下一步
+
+### 你已经学会了：
+
+1.  Java 语言基础（变量、控制流、面向对象）
+    
+2.  IntelliJ IDEA 的使用技巧
+    
+3.  Gradle 构建系统
+    
+4.  NeoForge 开发环境搭建
+    
+5.  阅读和理解源码的方法
+    
+6.  模组开发核心概念（注册系统、事件系统）
+    
+7.  创建第一个模组项目
+    
+
+### 继续学习：
+
+1.  **阅读 NeoForge 官方文档**：[docs.neoforged.net](https://docs.neoforged.net/)
+    
+2.  **学习更多功能**：
+    
+    -   方块（Block）开发
+        
+    -   实体（Entity）开发
+        
+    -   配方（Recipe）系统
+        
+    -   数据生成（Data Generation）
+        
+3.  **参考其他模组源码**：
+    
+    -   在 GitHub 搜索 "NeoForge mod"
+        
+    -   学习优秀模组的代码结构
+        
+4.  **加入社区**：
+    
+    -   [NeoForge Discord](https://discord.neoforged.net/)
+        
+    -   [BBSMC](https://bbsmc.net/)
+        
+
+### 推荐阅读顺序：
+
+1.  本文档（Java 和 IDEA 基础）
+    
+2.  物品开发详解
+    
+
+**记住：** 模组开发是一个持续学习的过程。遇到问题时，善用搜索引擎和社区资源。祝你开发愉快！

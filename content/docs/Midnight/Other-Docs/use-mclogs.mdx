@@ -1,0 +1,58 @@
+---
+title: "如何正确地使用mclo.gs发送报错日志/崩溃报告"
+author: "午夜_Midnight"
+license: "CC BY-NC-SA 4.0"
+---
+本文首发于简幻欢社区论坛（已关站），后发布在我的个人blog上：
+
+[https://8ka.hk/upmclog](https://8ka.hk/upmclog)
+
+## 前言
+
+jhh交流群里一堆~天才~连报错日志都不会发，于是就有了这篇教程。
+
+## 第一步 找到日志/崩溃报告文件
+
+### 崩溃报告（crash-reports）
+
+![1](/assets/docs/Midnight/Other-Docs/pA7Zsjs.webp)
+
+如果你的服务器是在启动后崩溃的，那么**大概率**会有如上图所示的输出，这代表服务器生成了一个崩溃报告。
+
+在文件根目录的`crash-reports`文件夹内找到这次崩溃输出的日志，全选复制里面的内容。
+
+### 最后输出的日志（latest.log）
+
+如果你的服务器是在启动阶段崩溃，或者是在运行过程中关闭且没有产生崩溃报告，那么你需要上传`latest.log`。
+
+转到文件，在根目录下找到`logs`文件夹，进入文件夹后找到`latest.log`文件，全选并复制。
+
+> **提示**
+> 
+> 这个文件有可能会非常大(在开了很久的服务器上或者是报错刷屏的情况下)，如果是这样的话请只复制有用的部分。
+
+## 第二步 上传至mclo.gs
+
+### 方式1 使用快捷网页
+
+打开下方链接(二选一)，并按照网页内提示的方式操作：
+
+[https://www.zeronight.top/mclogv2](https://www.zeronight.top/mclogv2)[https://ideafox.top/mclo](https://ideafox.top/mclo)
+
+### 方式2 使用原版网页
+
+打开网站 ，将你的日志粘贴到下方的输入框内，然后点击右上角的`save`保存。
+
+[https://mclo.gs](https://mclo.gs)
+
+![](/assets/docs/Midnight/Other-Docs/pepp9oR.webp)
+
+等待网站生成完毕后，**直接复制地址栏内的链接**即可。
+
+![](/assets/docs/Midnight/Other-Docs/pZ73To9.webp)
+
+## 第三步 分享链接
+
+将你的错误日志/崩溃报告的链接发给大佬，让他们帮你分析信息吧！
+
+~谁要是点那个raw分享我头给你打掉（~

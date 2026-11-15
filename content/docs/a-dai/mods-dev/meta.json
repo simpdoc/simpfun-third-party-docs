@@ -1,0 +1,16 @@
+{
+  "title": "模组开发教程",
+  "pages": [
+    "JavaInIdea",
+    "item_guide",
+    "food_and_crop_guide",
+    "block_guide",
+    "mixin_guide",
+    "resource_guide",
+    "inventories_and_transfers_guide",
+    "data_storage_guide",
+    "gui_guide",
+    "worldgen_guide",
+    "render"
+  ]
+}

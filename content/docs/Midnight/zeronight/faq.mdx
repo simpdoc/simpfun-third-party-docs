@@ -1,0 +1,229 @@
+---
+title: "常见问题"
+author: "午夜_Midnight"
+license: "CC BY-NC-SA 4.0"
+---
+## 我可以在服务端添加mod吗？
+
+**不能！**这是插件服务端不是模组服务端！
+
+但是你可以在客户端添加一些辅助mod，例如JEI，Jade，Carpet等。
+
+## 为什么不支持Java版1.7——1.21.6？
+
+> **警告**
+> 
+> 请尽量使用与服务端相同版本的客户端进入游戏！
+
+1.  此整合包没有安装ViaRewind（不支持1.7-1.9）；
+    
+2.  1.17及以下的版本进入1.18+的服务器会出现一些bug，包括但不限于：
+    
+
+-   1.16.5 及以下的客户端不支持 1.17+ 的新世界高度，客户端无法显示和交互 0 层以下的方块和 255 层以上的方块。
+    
+
+-   1.16.5 及以下的客户端在 1.17+ 服务器有时物品栏会不同步（幽灵物品）。
+    
+
+3.  新版本的物品特性无法在旧版本游戏内使用是因为ViaVersion**致力于兼容性而不是添加新的特性**。
+    
+
+因此我在viaversion的配置文件里锁死了最低版本为1.21.7，如果你确实有使用低版本的需求，请自行去配置文件删除相关配置。
+
+## 为什么不支持更旧的基岩版客户端版本？
+
+这个是Geyser的原因。
+
+Geyser这个插件的最新构建永远仅支持最近的几个Minecraft基岩版正式版本。
+
+## 在一些情况下BE客户端被识别为了JE客户端是什么情况？
+
+> **TIP**
+> 
+> 在此整合包中，基岩版玩家id前面是加了负号“-”的，例如：`-user114514`
+> 
+> **如果遇到基岩版玩家id前没有负号，那就是触发了此问题。**
+
+此问题的具体表现为：基岩版用户需要重新注册，背包物品丢失，无法使用BE特有功能等。
+
+这是因为 Floodgate 插件没有认出来BE客户端，遇到此问题**请迅速退出服务器重进**，尽量不要重复注册！这个问题目前没有根治方法。
+
+不要删除Floodgate插件，本整合包部分功能依赖于此插件！
+
+![](/assets/docs/Midnight/zeronight/c471f768142c2f49c21ddc6b0dd448b2.webp)
+
+## 登录超时时间太短了，怎么改？
+
+打开文件管理页面，找到`/plugins/authme/config.yml`文件，将第249行的 `timeout` 后的那个数修改为你需要的时间，单位为秒。
+
+## 如何修改一个IP最大玩家注册数量？
+
+方法1：
+
+使用简幻欢文件管理的配置项修改：
+
+![](/assets/docs/Midnight/zeronight/image-pUUZ.webp)
+
+方法2：
+
+打开`/plugins/AuthMe/config.yml`，找到第200行的`maxRegPerIp`，保存后重载插件。
+
+```yaml
+# 每个IP地址允许的最大注册次数
+# 值0表示注册次数不限！
+maxRegPerIp: 2
+```
+
+## 开启基岩版玩家自动注册/自动登录
+
+打开文件管理页面，找到 `/plugins/BedrockPlayerSupport/config.yml` 文件第140行，根据注释内容自行开启（enable后的`false`改成`true`）。
+
+```yaml
+auth:
+  register:
+     # 启用基岩版玩家自动注册功能
+     # Enable bedrock player automatic register function
+    enable: false
+     # 随机的密码的长度
+     # The length of random password
+    password-length: 16
+
+  login:
+     # 启用基岩版玩家自动登录功能
+     # Enable bedrock player automatic login function
+    enable: false
+     # 自动登录命令(控制台发送)
+     # 验证插件设置为 other 时会调用此处命令
+     # 在此处填写你使用的登录插件的强制登录命令
+     # 可用变量: %playerName% 玩家名
+     # Automatic login command (send by console)
+     # When the auth plugin is set to other, this command will be sent
+     # Fill in the force login command for the auth plugin you are using here
+     # Available variable: %playerName% player name
+    command: 'forcelogin %playerName%'
+```
+
+## 不想要登录插件了可以删了吗？
+
+> **警告**
+> 
+> 建议先去看下这个：[【MCJE】使用正确的登录方式保护服务器](https://www.yuque.com/simpfox/simpdoc/mcje-auth-type)
+> 
+> 真的要删掉登录插件？那就接着往下看。
+> 
+> **游戏内账号被他人登录毁号概不负责！**
+
+在简幻欢控制台打开文件管理页面，找到`/plugins/`文件夹，将`Authme-*.jar` 删除。
+
+![](/assets/docs/Midnight/zeronight/196fafde50bfb743a7273e5a56dc0d23.webp)
+
+## 如何添加新的称号
+
+beta 1.5.0.2+：
+
+[https://ricedoc.handyplus.cn/wiki/PlayerTitle/add/](https://ricedoc.handyplus.cn/wiki/PlayerTitle/add/)
+
+beta 1.4.0.2~beta 1.4.0.11：
+
+前往 `/plugins/UserPrefix/prefixes/` 下查看示例文件自行编写。
+
+beta 1.4.0.1-：
+
+[https://ricedoc.handyplus.cn/wiki/PlayerTitle/add/](https://ricedoc.handyplus.cn/wiki/PlayerTitle/add/)
+
+## 如何修改家的数量上限
+
+> **提示**
+> 
+> 仅限整合包版本 release 1.2.20+ 使用。
+
+打开文件管理页面，找到`/plugins/SunLight/modules/homes/settings.yml`文件，找到如下所示的这部分内容，修改红框内数字的值。保存后重启服务器或者使用 `/sunlight reload` 重载。
+
+![](/assets/docs/Midnight/zeronight/image-dNeN.webp)
+
+## 没有画廊演示的侧边计分板？
+
+> **TIP**
+> 
+> 由于简幻欢的流量机制问题，侧边计分板现在默认关闭，如果需要可以自行打开。
+
+打开文件管理页面，找到`/plugins/TAB/config.yml`文件，找到如下所示的这部分内容，将 enabled 后的`false`改为`true`：
+
+```yaml
+scoreboard:
+  enabled: false
+  toggle-command: /sb
+  remember-toggle-choice: false
+  hidden-by-default: false
+  use-numbers: true
+  static-number: 0
+  delay-on-join-milliseconds: 250
+  scoreboards:
+    scoreboard1:
+      title: '%animation:ServerName%'
+      lines:
+      - '&6我的信息：'
+      - '&b玩家id：&f%player_name%'
+      - '&b当前称号：&r%playerTitle_use%'
+      - '&b当前延迟：&6%player_ping% &bms'
+      - '&b客户端版本：&5%viaversion_player_protocol_version%'
+      - '&b客户端类型：&r%floodgate_device%'
+      - ''
+      - '&6服务器信息：'
+      - '&b在线玩家数：&a%online%&7/&c%server_max_players%'
+      - '&bTPS：&r%server_tps_1_colored% %server_tps_5_colored%'
+      - ''
+      - '%animation:Tips%'
+      - '&b%time%   %date%'
+```
+
+## 普通玩家用不了假人？
+
+> **提示**
+> 
+> 仅限整合包版本 v1.4.0.11-beta 及之前的版本使用。
+> 
+> v1.5.0.1-beta 后需自行安装其他假人插件。
+> 
+> 可选择：[https://modrinth.com/plugin/fake-player-plugin-(fpp)](https://modrinth.com/plugin/fake-player-plugin-\(fpp\))
+
+> **提示**
+> 
+> Leaves假人文档：[假人 | LeavesMC 文档](https://docs.leavesmc.org/zh_Hans/leaves/reference/fakeplayer)
+> 
+> 第三方镜像文档的镜像：[Leaves 假人文档](/docs/Midnight/Other-Docs/leaves-bot)
+
+假人默认只允许有管理员权限的玩家使用。
+
+将假人使用权限开放给玩家： `/lp group default permission set bukkit.command.bot true`
+
+### 游戏内输入/bot后显示红色？
+
+这是leaves的bug，如果你有权限不用管他。
+
+## 启用刷线机
+
+> **提示**
+> 
+> 仅限整合包版本 release 1.2.10~v1.4.0.11-beta 使用。
+
+1.21.4+版本的Leaves服务端还原1.21.2之前的刷线机
+
+**方法1：**
+
+![](/assets/docs/Midnight/zeronight/image-TRTw.webp)
+
+![](/assets/docs/Midnight/zeronight/image-lEKA.webp)
+
+在简幻欢实例的文件管理中选择配置项修改，点击②处的菜单切换到“Leaves服务端配置”，往下翻找到启用刷线机把它打开，然后拉到最下面点击保存，然后重启服务器。
+
+**方法2：**
+
+在leaves.yml内找到这一行：
+
+```yaml
+string-tripwire-hook-duplicate: false
+```
+
+把 `false` 改成 `true` 后保存并重启服务器。

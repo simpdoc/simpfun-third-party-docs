@@ -1,0 +1,773 @@
+---
+title: "NeoForge 数据存储完全指南"
+author: "阿呆皮革厂"
+license: "CC BY-NC-SA 4.0"
+---
+* * *
+
+## 目录
+
+1.  [先建立全景图：NeoForge 里到底有哪些“存储层”](#1-%E5%85%88%E5%BB%BA%E7%AB%8B%E5%85%A8%E6%99%AF%E5%9B%BEneoforge-%E9%87%8C%E5%88%B0%E5%BA%95%E6%9C%89%E5%93%AA%E4%BA%9B%E5%AD%98%E5%82%A8%E5%B1%82)
+    
+2.  [方法论总框架：先问 6 个问题，再写 1 行代码](#2-%E6%96%B9%E6%B3%95%E8%AE%BA%E6%80%BB%E6%A1%86%E6%9E%B6%E5%85%88%E9%97%AE-6-%E4%B8%AA%E9%97%AE%E9%A2%98%E5%86%8D%E5%86%99-1-%E8%A1%8C%E4%BB%A3%E7%A0%81)
+    
+3.  [NBT：最底层、最直接、最容易踩坑的数据格式](#3-nbt%E6%9C%80%E5%BA%95%E5%B1%82%E6%9C%80%E7%9B%B4%E6%8E%A5%E6%9C%80%E5%AE%B9%E6%98%93%E8%B8%A9%E5%9D%91%E7%9A%84%E6%95%B0%E6%8D%AE%E6%A0%BC%E5%BC%8F)
+    
+4.  [Codec：把“数据结构”升级为“可复用协议”](#4-codec%E6%8A%8A%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E5%8D%87%E7%BA%A7%E4%B8%BA%E5%8F%AF%E5%A4%8D%E7%94%A8%E5%8D%8F%E8%AE%AE)
+    
+5.  [Data Components：1.21 物品数据核心机制（重点补充）](#5-data-components121-%E7%89%A9%E5%93%81%E6%95%B0%E6%8D%AE%E6%A0%B8%E5%BF%83%E6%9C%BA%E5%88%B6%E9%87%8D%E7%82%B9%E8%A1%A5%E5%85%85)
+    
+6.  [Data Attachment：给实体/方块实体/区块/世界外挂状态](#6-data-attachment%E7%BB%99%E5%AE%9E%E4%BD%93%E6%96%B9%E5%9D%97%E5%AE%9E%E4%BD%93%E5%8C%BA%E5%9D%97%E4%B8%96%E7%95%8C%E5%A4%96%E6%8C%82%E7%8A%B6%E6%80%81)
+    
+7.  [SavedData 与“已储存的数据”：世界级持久化主战场](#7-saveddata-%E4%B8%8E%E5%B7%B2%E5%82%A8%E5%AD%98%E7%9A%84%E6%95%B0%E6%8D%AE%E4%B8%96%E7%95%8C%E7%BA%A7%E6%8C%81%E4%B9%85%E5%8C%96%E4%B8%BB%E6%88%98%E5%9C%BA)
+    
+8.  [DataMap：给注册表对象做数据驱动扩展](#8-datamap%E7%BB%99%E6%B3%A8%E5%86%8C%E8%A1%A8%E5%AF%B9%E8%B1%A1%E5%81%9A%E6%95%B0%E6%8D%AE%E9%A9%B1%E5%8A%A8%E6%89%A9%E5%B1%95)
+    
+9.  [网络同步与编解码：什么时候用 StreamCodec，什么时候用 Codec](#9-%E7%BD%91%E7%BB%9C%E5%90%8C%E6%AD%A5%E4%B8%8E%E7%BC%96%E8%A7%A3%E7%A0%81%E4%BB%80%E4%B9%88%E6%97%B6%E5%80%99%E7%94%A8-streamcodec%E4%BB%80%E4%B9%88%E6%97%B6%E5%80%99%E7%94%A8-codec)
+    
+10.  [版本迁移与兼容：旧档不炸档的工程化策略](#10-%E7%89%88%E6%9C%AC%E8%BF%81%E7%A7%BB%E4%B8%8E%E5%85%BC%E5%AE%B9%E6%97%A7%E6%A1%A3%E4%B8%8D%E7%82%B8%E6%A1%A3%E7%9A%84%E5%B7%A5%E7%A8%8B%E5%8C%96%E7%AD%96%E7%95%A5)
+     
+11.  [完整架构实战：Attachment + SavedData + DataMap + Codec + NBT](#11-%E5%AE%8C%E6%95%B4%E6%9E%B6%E6%9E%84%E5%AE%9E%E6%88%98attachment--saveddata--datamap--codec--nbt)
+     
+12.  [高频故障与排错手册（实战向）](#12-%E9%AB%98%E9%A2%91%E6%95%85%E9%9A%9C%E4%B8%8E%E6%8E%92%E9%94%99%E6%89%8B%E5%86%8C%E5%AE%9E%E6%88%98%E5%90%91)
+     
+13.  [给新手的 4 阶段成长路线（可执行）](#13-%E7%BB%99%E6%96%B0%E6%89%8B%E7%9A%84-4-%E9%98%B6%E6%AE%B5%E6%88%90%E9%95%BF%E8%B7%AF%E7%BA%BF%E5%8F%AF%E6%89%A7%E8%A1%8C)
+     
+14.  [最终方法论总结（可复用模板）](#14-%E6%9C%80%E7%BB%88%E6%96%B9%E6%B3%95%E8%AE%BA%E6%80%BB%E7%BB%93%E5%8F%AF%E5%A4%8D%E7%94%A8%E6%A8%A1%E6%9D%BF)
+     
+
+* * *
+
+## 1\. 先建立全景图：NeoForge 里到底有哪些“存储层”
+
+先记住一句话：**存储技术不是按“会不会写”选，而是按“数据归属”选。**
+
+NeoForge/Minecraft 常见数据层可以拆成 5 层：
+
+1.  **原始结构层（NBT）**
+    
+    -   本质是树状键值结构，读写入口非常多。
+        
+    -   典型：`CompoundTag` 在落盘路径大量出现。
+        
+2.  **协议描述层（Codec / StreamCodec）**
+    
+    -   `Codec` 负责结构规则（JSON/NBT 等）。
+        
+    -   `StreamCodec` 负责网络二进制编解码。
+        
+3.  **对象状态层（Attachment / Data Components）**
+    
+    -   通用宿主状态：`AttachmentType`
+        
+    -   物品组件状态：`DataComponentType`
+        
+4.  **世界持久层（SavedData / PlayerData）**
+    
+    -   世界/维度级：`SavedData`
+        
+    -   玩家档案级：`PlayerDataStorage`
+        
+5.  **数据驱动层（DataMap）**
+    
+    -   给注册表对象挂“可数据包配置”的值：`DataMapType`
+        
+
+* * *
+
+## 2\. 方法论总框架：先问 6 个问题，再写 1 行代码
+
+### 2.1 六问法（建议贴到你的项目 README）
+
+1.  **归属**：数据属于谁？玩家 / 实体 / 方块实体 / 区块 / 世界 / 注册表对象 / ItemStack。
+    
+2.  **生命周期**：跨死亡吗？跨重登吗？跨维度吗？跨存档版本吗？
+    
+3.  **权威端**：服务端权威还是客户端可预测？
+    
+4.  **同步边界**：需要发给客户端吗？什么时候发？全量还是增量？
+    
+5.  **持久边界**：落盘到哪里？什么时候触发 dirty？
+    
+6.  **演进策略**：字段新增/删除时，旧档怎么读？
+    
+
+### 2.2 方案选型速查表
+
+| 需求 | 推荐 | 关键原因 |
+| --- | --- | --- |
+| 给实体/方块实体/区块/Level挂状态 | Attachment | 与宿主生命周期绑定 |
+| 给 ItemStack 挂结构化数据 | Data Components | 1.21 核心体系，Patch 增量模型 |
+| 存整个世界/维度全局状态 | SavedData | 标准落盘框架，`data/*.dat` |
+| 给注册表对象（物品/方块）挂数据驱动参数 | DataMap | JSON + tag + merge/remove |
+| 小规模快速原型 | 手写 NBT | 低门槛，但后期维护成本高 |
+| 一套结构同时服务 JSON/NBT/网络 | Codec(+StreamCodec) | 协议统一、可演进 |
+
+* * *
+
+## 3\. NBT：最底层、最直接、最容易踩坑的数据格式
+
+NBT 适合“我现在就要把数据塞进 tag”这类场景，但也最容易出现兼容性债务。
+
+### 3.1 从源码看 NBT 的真实落盘链路
+
+-   `SavedData.save(File, Provider)` 会把你的业务 tag 放进 `"data"` 子节点（`put("data", ...)`）。
+    
+-   同时写入 DataVersion（`NbtUtils.addCurrentDataVersion(...)`）。
+    
+-   最终压缩写盘（`IOUtilities.writeNbtCompressed(...)`）。
+    
+
+结论：**NBT 不是“随便写个 Map”就完事，它在存档系统里有版本语义。**
+
+### 3.2 手写 NBT 模板（带兼容字段）
+
+```java
+public final class QuestProgressData {
+    private int version = 1;
+    private int kills;
+    private String title = "";
+
+    public CompoundTag save() {
+        CompoundTag tag = new CompoundTag();
+        tag.putInt("ver", version);
+        tag.putInt("kills", kills);
+        tag.putString("title", title);
+        return tag;
+    }
+
+    public void load(CompoundTag tag) {
+        int ver = tag.contains("ver", Tag.TAG_INT) ? tag.getInt("ver") : 0;
+
+        // 兼容旧档：旧版本没有 kills/title 时给默认值
+        this.kills = tag.contains("kills", Tag.TAG_INT) ? tag.getInt("kills") : 0;
+        this.title = tag.contains("title", Tag.TAG_STRING) ? tag.getString("title") : "";
+
+        // 预留迁移逻辑
+        if (ver < 1) {
+            // migrate...
+        }
+        this.version = 1;
+    }
+}
+```
+
+### 3.3 NBT 方法论
+
+-   键名一旦发布就别乱改。
+    
+-   读取时永远做 `contains + type` 防御。
+    
+-   复杂结构尽量转 Codec，减少手写分支。
+    
+-   NBT 更像“载体”，复杂系统应把“结构定义”交给 Codec。
+    
+
+* * *
+
+## 4\. Codec：把“数据结构”升级为“可复用协议”
+
+### 4.1 为什么 Codec 是工程分水岭
+
+当你只写 NBT，结构规则散落在多处；当你写 Codec，结构是集中定义的。
+
+源码里大量使用 Codec 统一结构：
+
+-   `ItemStack.CODEC`
+    
+-   `DataComponentPatch.CODEC`
+    
+-   `DataMapType.codec()`
+    
+
+### 4.2 典型声明式模型（record）
+
+```java
+public record PlayerBadge(int level, String title, long updatedAt) {
+    public static final Codec<PlayerBadge> CODEC = RecordCodecBuilder.create(ins -> ins.group(
+        Codec.INT.fieldOf("level").forGetter(PlayerBadge::level),
+        Codec.STRING.optionalFieldOf("title", "").forGetter(PlayerBadge::title),
+        Codec.LONG.optionalFieldOf("updated_at", 0L).forGetter(PlayerBadge::updatedAt)
+    ).apply(ins, PlayerBadge::new));
+}
+```
+
+### 4.3 Codec 与 NBT 的关系（重点）
+
+-   Codec 定义结构。
+    
+-   NBT 只是 Codec 的一种操作上下文（`NbtOps`）。
+    
+
+NeoForge 在附件里也是这样做的：`AttachmentType.Builder.serialize(Codec)` 最终使用 `NbtOps` 编解码。
+
+### 4.4 错误处理策略
+
+不要把 `.result().get()` 当常规写法。源码里也标了 TODO（`AttachmentType.Builder.serialize(Codec, Predicate)`）。
+
+推荐：
+
+-   使用 `getOrThrow` + 明确日志。
+    
+-   在关键路径记录数据上下文（对象 ID、字段摘要）。
+    
+
+* * *
+
+## 5\. Data Components：1.21 物品数据核心机制（重点补充）
+
+这是你反馈里“遗漏风险最大”的模块之一，必须掌握。
+
+### 5.1 先理解三件事
+
+1.  **组件类型**：`DataComponentType<T>`
+    
+2.  **组件集合**：`DataComponentMap`
+    
+3.  **组件补丁**：`DataComponentPatch`
+    
+
+它不是“整包替换”，而是“原型 + patch”模型：
+
+-   Item 原型组件在物品定义上。
+    
+-   具体 ItemStack 用 patch 覆盖差异（`PatchedDataComponentMap`）。
+    
+
+### 5.2 持久化组件 vs 临时组件
+
+`DataComponentType.isTransient()` 定义了是否可持久化（`codec == null` 即 transient）。
+
+这对应构建器语义：
+
+-   持久化：`persistent(Codec)`
+    
+-   网络同步：`networkSynchronized(StreamCodec)`
+    
+
+### 5.3 ItemStack 如何编码组件
+
+`ItemStack.CODEC` 里 `components` 字段使用 `DataComponentPatch.CODEC`。
+
+网络路径同理：`ItemStack.OPTIONAL_STREAM_CODEC` 写入 count + item + patch（`encode`）。
+
+### 5.4 Patch 的增量语义（非常关键）
+
+`DataComponentPatch` 的 map 值是 `Optional<?>`：
+
+-   `Optional.of(v)` = 设置/覆盖
+    
+-   `Optional.empty()` = 移除
+    
+
+此外删除键在文本编码上使用 `!` 前缀（`REMOVED_PREFIX` 与 `PatchKey.CODEC`）。
+
+### 5.5 PatchedDataComponentMap 的性能设计
+
+`PatchedDataComponentMap` 采用 copy-on-write：
+
+-   初始共享 patch 引用
+    
+-   写入前 `ensureMapOwnership()`
+    
+
+这类设计能降低复制成本，但你要知道：**可变结构下的“看起来复制了”不一定马上深拷贝。**
+
+### 5.6 常用 API（ItemStack）
+
+-   设置组件：`ItemStack.set(DataComponentType, T)`
+    
+-   移除组件：`ItemStack.remove(DataComponentType)`
+    
+-   应用 patch 并校验：`applyComponentsAndValidate(...)`
+    
+
+### 5.7 DataComponent 与 NBT 的桥接
+
+`CustomData` 提供了“组件中携带 NBT”能力：
+
+-   `CODEC`（`CustomData.CODEC`）
+    
+-   更新便捷函数（`CustomData.update(...)`）
+    
+
+结论：DataComponent 不排斥 NBT，而是把 NBT 纳入组件体系管理。
+
+* * *
+
+## 6\. Data Attachment：给实体/方块实体/区块/世界外挂状态
+
+### 6.1 本质
+
+`AttachmentType` + `IAttachmentHolder` 组成通用宿主附加系统。
+
+### 6.2 新手必须知道的语义差异
+
+`getData(...)` 会“无则创建默认值并写入”； `getExistingData(...)` 才是“只读不创建”。
+
+这会影响你的内存占用与脏数据追踪。
+
+### 6.3 序列化关键点
+
+-   全局保存键：`ATTACHMENTS_NBT_KEY`
+    
+-   写：`serializeAttachments(...)`
+    
+-   读：`deserializeAttachments(...)`
+    
+
+每个附件以“附件注册 ID -> tag”方式写入（`tag.put(ATTACHMENT_ID, serialized)`）。
+
+### 6.4 默认复制策略
+
+如果没自定义 copy handler，会走“序列化再反序列化”复制（`defaultCopyHandler(...)`）。
+
+这很稳，但对象大时可能有额外开销。
+
+### 6.5 `copyOnDeath` 的真实含义
+
+`copyOnDeath()` 只影响“玩家重生/生物转换等复制语义”，不是所有场景都自动继承。
+
+### 6.6 典型注册模板
+
+```java
+public final class ModAttachments {
+    public static final DeferredRegister<AttachmentType<?>> ATTACHMENTS =
+        DeferredRegister.create(NeoForgeRegistries.Keys.ATTACHMENT_TYPES, MODID);
+
+    public static final Supplier<AttachmentType<Integer>> KILL_COUNT = ATTACHMENTS.register("kill_count", () ->
+        AttachmentType.builder(() -> 0)
+            .serialize(Codec.INT)
+            .copyOnDeath()
+            .build()
+    );
+}
+```
+
+### 6.7 宿主脏标记纪律
+
+`AttachmentType` 的类注释已经明确：
+
+-   BlockEntity 变更后要 `setChanged`
+    
+-   Chunk 变更后要 `setUnsaved(true)`
+    
+
+**附件本身不会替你自动推断“内部字段变更”。**
+
+* * *
+
+## 7\. SavedData 与“已储存的数据”：世界级持久化主战场
+
+你提到“已储存的数据”，在 NeoForge 语境里，核心就是 `SavedData` 体系及其变体。
+
+### 7.1 SavedData 生命周期
+
+-   实现 `save(...)`
+    
+-   数据变更后调用 `setDirty()`
+    
+-   存档时只有 dirty 才落盘（`if (this.isDirty())`）
+    
+
+### 7.2 Factory 设计与 DataFixTypes
+
+`SavedData.Factory` 支持可空 `DataFixTypes`（`type`）。
+
+这意味着：
+
+-   你可以选择挂 DFU 类型进行版本修复。
+    
+-   也可以不挂（null），但要自己保障兼容。
+    
+
+### 7.3 读取路径与版本升级
+
+`DimensionDataStorage.readTagFromDisk(...)` 在有 `dataFixType` 时会执行 update（`dataFixType.update(...)`）。
+
+### 7.4 维度存储管理 API
+
+-   创建或读取：`computeIfAbsent(...)`
+    
+-   仅读取：`get(...)`
+    
+-   手动设置缓存：`set(...)`
+    
+
+### 7.5 一个高级细节：Dummy 占位
+
+`DimensionDataStorage.get(...)` 用 `DummySavedData.DUMMY` 标记“已查过但不存在”，避免重复 IO。
+
+这就是缓存层的小型优化策略。
+
+### 7.6 PlayerDataStorage 也是“已储存数据”
+
+玩家档并不走 SavedData，而是 `PlayerDataStorage` 管理 `playerdata/<uuid>.dat`。
+
+关键点：
+
+-   读取后做数据修复（`DataFixTypes.PLAYER.updateToCurrentVersion(...)`）
+    
+-   有损坏备份策略（`backup(...)`）
+    
+
+### 7.7 Level 附件如何落盘
+
+NeoForge 用桥接实现：`LevelAttachmentsSavedData`
+
+-   初始化：`init(ServerLevel)`
+    
+-   保存转调：`level.serializeAttachments(...)`
+    
+-   永远 dirty：`isDirty() -> true`
+    
+
+* * *
+
+## 8\. DataMap：给注册表对象做数据驱动扩展
+
+### 8.1 DataMapType 四元组
+
+`DataMapType` 可看成四元组：
+
+-   registryKey
+    
+-   id
+    
+-   codec
+    
+-   networkCodec(+mandatorySync)
+    
+
+同步配置见 `synced(...)`。
+
+### 8.2 高级能力：冲突合并 + 定向移除
+
+`AdvancedDataMapType`
+
+-   合并器：`merger()`
+    
+-   移除器：`remover()`
+    
+
+适合多个数据包共同改同一对象时的冲突治理。
+
+### 8.3 DataMapLoader 的真实执行语义
+
+`DataMapLoader.buildDataMap(...)` 里顺序非常关键：
+
+1.  `replace` 可清空当前结果（`if (entry.replace()) result.clear()`）
+    
+2.  `values` 逐条应用，冲突走 merger（`merger.merge(...)`）
+    
+3.  `remove` 最后处理（`entry.removals().forEach(...)`）
+    
+
+### 8.4 同步握手与断连条件
+
+-   同步包：`RegistryDataMapSyncPayload`
+    
+-   客户端应用：`handleDataMapSync(...)`
+    
+-   mandatory 不匹配断开：`handleKnownDataMaps(...)`
+    
+
+* * *
+
+## 9\. 网络同步与编解码：什么时候用 StreamCodec，什么时候用 Codec
+
+### 9.1 简单原则
+
+-   **网络包**优先 `StreamCodec`（二进制、稳定、快）
+    
+-   **配置/存档**优先 `Codec`（结构化、易演进）
+    
+
+### 9.2 源码中的组合用法
+
+-   `DataComponentType` 同时有 `codec()` 与 `streamCodec()`
+    
+-   Builder 若只给 `Codec`，可回退生成网络 codec（`ByteBufCodecs.fromCodecWithRegistries(...)`）
+    
+
+### 9.3 ByteBufCodecs 基础件
+
+`ByteBufCodecs` 提供基础积木：
+
+-   NBT：`TAG`、`COMPOUND_TAG`
+    
+-   常用数值：`VAR_INT`
+    
+
+### 9.4 一个现实约束（DataMap）
+
+目前 DataMap 同步仍在用 `Codec -> Json 字符串 -> 网络` 路线（`TODO`）。
+
+这提醒我们：**设计时要给协议留演进空间，别把“当前实现”当永久形态。**
+
+* * *
+
+## 10\. 版本迁移与兼容：旧档不炸档的工程化策略
+
+### 10.1 三层兼容策略
+
+1.  **字段级**：`optionalFieldOf + 默认值`
+    
+2.  **对象级**：NBT 加 `ver` 字段，读时按版本迁移
+    
+3.  **存档级**：可接入 `DataFixTypes` 走统一升级
+    
+
+### 10.2 SavedData 的迁移建议
+
+如果你不使用 DFU，也至少要：
+
+-   在 tag 中放版本号
+    
+-   在 load 里写“从老字段到新字段”的转换
+    
+-   保证缺字段时有安全默认值
+    
+
+### 10.3 DataComponent/Attachment 的迁移建议
+
+-   `DataComponent`：优先通过 Codec optional 字段平滑演进
+    
+-   `Attachment`：如果是 Codec 序列化，等价策略可用；如果是手写 NBT，要自己做兼容分支
+    
+
+* * *
+
+## 11\. 完整架构实战：Attachment + SavedData + DataMap + Codec + NBT
+
+场景：做“世界任务系统”
+
+-   玩家个人任务进度：Attachment
+    
+-   世界全局任务序列：SavedData
+    
+-   不同物品任务权重：DataMap
+    
+-   结构统一：Codec
+    
+-   紧急临时字段：NBT/CustomData
+    
+
+### 11.1 分层设计
+
+1.  `PlayerQuestAttachment`（玩家态）
+    
+2.  `GlobalQuestSavedData`（世界态）
+    
+3.  `ItemQuestWeightDataMap`（规则态）
+    
+4.  `QuestProgress.CODEC`（协议态）
+    
+
+### 11.2 服务端权威流
+
+1.  玩家行为触发（服务端）
+    
+2.  更新玩家附件
+    
+3.  达成条件后更新 SavedData 并 `setDirty`
+    
+4.  客户端仅接收展示结果，不写权威状态
+    
+
+### 11.3 设计收益
+
+-   生命周期边界清晰
+    
+-   存档边界可追踪
+    
+-   数据驱动可热更新（DataMap reload）
+    
+-   未来迁移成本可控
+    
+
+* * *
+
+## 12\. 高频故障与排错手册（实战向）
+
+### 12.1 附件“读一下就多了”
+
+原因：`getData(...)` 会创建默认值。
+
+解决：只探测存在性时用 `getExistingData(...)`。
+
+### 12.2 附件没保存
+
+排查顺序：
+
+1.  该附件是否配置了序列化（`serialize(...)`）
+    
+2.  serializer 是否返回 null（null = 不写入，见 `write(...)`）
+    
+3.  宿主是否正确触发脏标记（BE/Chunk）
+    
+
+### 12.3 SavedData 改了但重进丢失
+
+99% 是忘了 `setDirty()`。
+
+### 12.4 ItemStack 组件应用后报错
+
+用 `applyComponentsAndValidate(...)` 观察回滚日志；它会在失败时恢复旧 patch（`restorePatch(...)`）。
+
+### 12.5 DataMap 客户端进不去
+
+看 mandatory 协商路径 `handleKnownDataMaps(...)` 的缺失集合比较逻辑（`missingOur/missingTheir`）。
+
+### 12.6 ItemStack 保存异常定位
+
+NeoForge 已给出增强日志包装：`DataComponentUtil.wrapEncodingExceptions(...)`。
+
+* * *
+
+## 13\. 给新手的 4 阶段成长路线（可执行）
+
+### 阶段 A
+
+-   做一个最小 `SavedData` 计数器
+    
+-   验证：重启世界后值不丢
+    
+
+### 阶段 B
+
+-   给玩家挂一个 `AttachmentType<Integer>`
+    
+-   覆盖：登录/重生/切维度
+    
+
+### 阶段 C
+
+-   把附件值改成 `record + Codec`
+    
+-   做一次字段升级（新增 optional 字段）
+    
+
+### 阶段 D
+
+-   注册一个 DataMap 给 `ITEM` 添加权重
+    
+-   做多数据包冲突并配置 merger/remover
+    
+
+完成后你就具备中级数据架构能力。
+
+* * *
+
+## 14\. 最终方法论总结（可复用模板）
+
+开发前先填这张表：
+
+1.  数据归属：\_\_\_\_\_\_
+    
+2.  生命周期：\_\_\_\_\_\_
+    
+3.  权威端：\_\_\_\_\_\_
+    
+4.  同步策略：\_\_\_\_\_\_
+    
+5.  持久化位置：\_\_\_\_\_\_
+    
+6.  兼容策略：\_\_\_\_\_\_
+    
+7.  失败回滚方案：\_\_\_\_\_\_
+    
+
+然后再决定：
+
+-   Attachment / DataComponent / SavedData / DataMap / NBT / Codec 的组合。
+    
+
+* * *
+
+## 附录 A：Attachment vs SavedData vs DataMap vs DataComponent（深度对比）
+
+| 维度 | Attachment | SavedData | DataMap | DataComponent |
+| --- | --- | --- | --- | --- |
+| 主归属 | 宿主对象 | 世界/维度 | 注册表对象 | ItemStack/组件持有者 |
+| 生命周期 | 跟宿主 | 跟存档 | 跟数据包与注册表 | 跟 ItemStack 实例 + 原型 |
+| 持久化 | 可选（serializer） | 默认框架支持 | 数据包来源，可同步 | persistent codec 决定 |
+| 网络 | 宿主路径决定 | 通常自定义包 | 内置协商/同步 | 内置 stream codec |
+| 适配场景 | 运行态状态扩展 | 全局系统状态 | 规则配置驱动 | 物品结构化状态 |
+| 迁移复杂度 | 中 | 中-高 | 中 | 中 |
+
+选择口诀：
+
+-   “对象态”优先 Attachment
+    
+-   “世界态”优先 SavedData
+    
+-   “规则态”优先 DataMap
+    
+-   “物品态”优先 DataComponent
+    
+-   “协议态”优先 Codec
+    
+
+* * *
+
+## 附录 B：最小可复用代码模板集合
+
+### B1. SavedData 模板
+
+```java
+public final class GlobalCounterData extends SavedData {
+    private int counter;
+
+    public static final SavedData.Factory<GlobalCounterData> FACTORY =
+        new SavedData.Factory<>(GlobalCounterData::new, GlobalCounterData::load);
+
+    public static GlobalCounterData load(CompoundTag tag, HolderLookup.Provider provider) {
+        GlobalCounterData d = new GlobalCounterData();
+        d.counter = tag.getInt("counter");
+        return d;
+    }
+
+    @Override
+    public CompoundTag save(CompoundTag tag, HolderLookup.Provider provider) {
+        tag.putInt("counter", counter);
+        return tag;
+    }
+
+    public int next() {
+        counter++;
+        setDirty();
+        return counter;
+    }
+}
+```
+
+### B2. Attachment 模板
+
+```java
+public record PlayerStats(int kills, int deaths) {
+    public static final Codec<PlayerStats> CODEC = RecordCodecBuilder.create(ins -> ins.group(
+        Codec.INT.optionalFieldOf("kills", 0).forGetter(PlayerStats::kills),
+        Codec.INT.optionalFieldOf("deaths", 0).forGetter(PlayerStats::deaths)
+    ).apply(ins, PlayerStats::new));
+}
+
+// 注册时：AttachmentType.builder(() -> new PlayerStats(0,0)).serialize(PlayerStats.CODEC).copyOnDeath().build();
+```
+
+### B3. DataComponent 值对象模板
+
+```java
+public record RuneData(int tier, String school) {
+    public static final Codec<RuneData> CODEC = RecordCodecBuilder.create(ins -> ins.group(
+        Codec.INT.fieldOf("tier").forGetter(RuneData::tier),
+        Codec.STRING.optionalFieldOf("school", "none").forGetter(RuneData::school)
+    ).apply(ins, RuneData::new));
+}
+
+// 典型用法：stack.set(MY_RUNE_COMPONENT, new RuneData(2, "fire"));
+```
+
+* * *
+
+这份文档的核心不是“API 清单”，而是把你训练成： **能先画数据生命周期，再选技术组合，最后写代码的人。**

@@ -1,0 +1,181 @@
+---
+title: "常用命令"
+author: "午夜_Midnight"
+license: "CC BY-NC-SA 4.0"
+---
+> **提示**
+> 
+> -   `<内容>` 为必填内容
+>     
+> -   `[内容]` 为选填内容
+>     
+> 
+> 使用命令时不要带括号！这里的所有括号都是提示作用！
+
+## **Authme**
+
+| 命令 | 功能 |
+| --- | --- |
+| **玩家命令** |  |
+| `/register <密码> <确认密码>` | 注册账户 |
+| `/login <密码>` | 登录 |
+| **管理员命令** |  |
+| `/authme register <player> <password>` | 使用指定的密码帮助指定的玩家注册 |
+| `/authme unregister <player>` | 取消某个玩家的注册 |
+| `/authme password <player> <pwd>` | 修改某个玩家的密码 |
+| `/authme forcelogin [player]` | 强制玩家登录 |
+
+## **CoreProtect**
+
+| 命令 | 功能 |
+| --- | --- |
+| **管理员命令** |  |
+| `/co help` | 显示命令列表 |
+| `/co inspect` | 开启查询模式 |
+| `/co rollback <params>` | 回档方块数据 |
+| `/co restore <params>` | 取消回档操作 |
+| `/co lookup <params>` | 方块记录翻页 |
+| `/co purge <params>` | 删除旧有数据 |
+| `/co reload` | 重载配置文件 |
+| `/co version` | 查看当前插件版本信息 |
+
+## **Gsit**
+
+| 命令 | 功能 |
+| --- | --- |
+| `/sit` (`/gsit`) | 坐在方块上 |
+| `/lay` (`/glay`) | 躺在方块上 |
+| `/crawl` (`/gcrawl`) | 趴在方块上 |
+
+## **PlayerTitle**
+
+| 命令 | 功能 |
+| --- | --- |
+| **玩家命令** |  |
+| `/plt shop` | 打开称号商城GUI |
+| `/plt open` | 打开称号仓库GUI |
+| **管理员命令** |  |
+| `/plt addReward <称号数量> <类型> <金额>` | 给对应数量的称号添加奖励 |
+| `/plt card <create/random>` | 创建/随机 称号卡 |
+| `/plt coin <give/set/take> [玩家名称] [金额]` | 给予/设置/拿走 玩家称号币 |
+| `/plt convert <类型>` | 转换数据，类型可选mysql或者sqlite |
+| `/plt getIp` | 获取服务器地址 |
+| `/plt player <addTitle/setTitle/listTitle/deleteTitle>` | 新增/设置/查看/删除 玩家称号 |
+| `/plt reload` | 重载插件 |
+| `/plt title <add/delete/list/import/description>` | 新增/删除/查看/导入/描述 称号 |
+| `/plt view <类型> [玩家名]` | 查看对应GUI并管理 |
+| `/plt clear <类型>` | 清理数据 |
+
+## **PublicBin**
+
+| 命令 | 功能 |
+| --- | --- |
+| `/bin` | 打开公共垃圾桶 |
+
+## **SkinsRestorer**
+
+| 命令 | 功能 |
+| --- | --- |
+| **玩家命令** |  |
+| `/skin` | 主命令 |
+| `/skin <skinname>` | 设置你的皮肤 |
+| `/skin url <skin.png 链接> [steve/slim]` | 将你的皮肤设置为指定链接的.png图片（steve/slim为皮肤模型，slim即纤细手臂） |
+| `/skin update` | 更新你的皮肤 |
+| `/skin clear` | 清除你的皮肤 |
+| `/skins` | 打开皮肤选择菜单 (只可用于 1.13 以上的版本, 该 GUI 可用于选择服务器已缓存的其他 ID 的皮肤) |
+| **管理员命令** |  |
+| `/sr` | 管理员主命令 |
+| `/skin set <playername> <skinname>` | 设置玩家皮肤 |
+| `/skin clear <player>` | 清除一个玩家的皮肤 |
+| `/skin update <player>` | 更新一个玩家的皮肤 |
+| `/sr drop <skinname>` | 从数据库删除皮肤数据 |
+| `/sr createcustom <name> <skin.png 链接>` | 自定义一个可用的皮肤 |
+| `/sr reload` | 重载插件配置和语言文件 |
+| `/sr props <playername>` | 返回玩家的皮肤属性信息 |
+| `/sr status` | 检查插件状态 |
+
+## **Sunlight**
+
+**本整合包已开启的模块的命令大部分都写入菜单内了。**
+
+官方命令列表（需要使用魔法）：[https://nightexpress.gitbook.io/sunlight/general/commands](https://nightexpress.gitbook.io/sunlight/general/commands)
+
+## **WorldEdit**
+
+> **INFO**
+> 
+> 默认情况下所有命令均为管理员权限。
+
+| 命令 | 功能 |
+| --- | --- |
+| **历史** |  |
+| `//undo [步数]` | 撤销你的上一个(或几个)操作 |
+| `//redo [步数]` | 重做你上一个(或几个)被撤销的操作 |
+| `//clearhistory` | 清除你的历史记录 |
+| **选区** |  |
+| `//wand` | 给予你编辑工具（默认为木斧）使用这个工具左键点击来选择第一个位置，右键点击来选择第二个位置 |
+| `//toggleeditwand` | 切换选择工具模式，使你可以正常使用作为选择工具的物品 |
+| `//desel` | 清除当前的选区 |
+| `//hpos1` | 将你指针所指的方块的位置设置为第一个选区位置 |
+| `//hpos2` | 将你指针所指的方块的位置设置为第二个选区位置 |
+| `//expand <数量>` | 向你所看的方向扩大选区范围 |
+| `//expand <数量> <方向>` | 向指定方向扩大选区范围 (可用方向有 north,south,east,west,up,down) |
+| `//expand <数量> <反方向数量> [方向]` | 同时向两个方向扩大选区范围 |
+| `//expandvert` | 将选区扩大到从天空到基岩 |
+| `//contract <数量>` | 向你所看的方向缩小选区范围 |
+| `//contract <数量> <方向>` | 向指定方向缩小选区范围 (可用方向有 north,south,east,west,up,down) |
+| `//contract <数量> <反方向数量> [方向]` | 同时向两个方向缩小选区范围 |
+| `//outset [-hv] <数量>` | 向所有方向扩大选区范围 |
+| `//inset [-hv] <数量>` | 向所有方向缩小选区范围 |
+| `//shift <数量> [方向]` | 移动选区范围，不移动选区中的内容 |
+| `//size` | 得到当前选区的大小 |
+| `//count <方块ID>` | 计算选区内指定方块的数量 |
+| `//distr [-c]` | 计算选区内的方块分布比例 |
+| **选区操作** |  |
+| `//set <方块ID>` | 将选区内的所有方块设定为指定方块 |
+| `//replace <到方块ID>` | 替换所有非空气方块为指定方块 |
+| `//replace <从方块ID> <到方块ID>` | 将所有指定方块替换成另一个指定方块 |
+| `//overlay <方块ID>` | 将指定方块放在选区内所有方块上方 |
+| `//walls <方块ID>` | 用指定方块在选区四周建立墙壁（不包括屋顶与地面） |
+| `//outline <方块ID>` | 用指定方块在选区周围建立墙壁，屋顶与地面 |
+| `//smooth [迭代次数]` | 平滑化选区的高度图 |
+| `//deform` | 按照几何表达式使选区内容变形 |
+| `//hollow` | 使选区内部的物体空心 |
+| `//regen` | 重新生成选择区域 |
+| `//move [数量] [方向] [留存方块ID]` | 移动选区内容，可以指定一个方块来填充移动后留空的区域 |
+| `//stack [数量] [方向]` | 叠加选区内容 |
+| `//naturalize` | 将选区表面3格设定为泥土，下面设定为原石 |
+| **剪贴板** |  |
+| `//copy` | 复制当前选区内容，注意你与选区的相对位置将被储存 |
+| `//cut` | 剪切当前选区内容 |
+| `//paste [-ao]` | 粘贴剪贴板内容。如果你使用-a标签，空气方块将会被忽略 |
+| `//rotate <角度>` | 旋转剪贴板内容 |
+| `//flip [方向]` | 翻转剪贴板内容 |
+| `//clearclipboard` | 清空你的剪贴板内容 |
+| **生成** |  |
+| `//generate <方块ID> <方程>` | 根据给出的方程生成形状 |
+| `//hcyl <方块ID> <半径> [高度]` | 生成一个竖直的空心圆柱体 |
+| `//cyl <方块ID> <半径> [高度]` | 生成一个竖直的实心圆柱体 |
+| `//sphere <方块ID> <半径> [yes(是否生成在上方)]` | 生成一个球体 |
+| `//hsphere <方块ID> <半径> [yes(是否生成在上方)]` | 生成一个空心球体 |
+| `//pyramid <方块ID> <大小>` | 生成一座金字塔 |
+| `//hpyramid <方块ID> <大小>` | 生成一座空心金字塔 |
+| `//forestgen [大小] [种类] [密度]` | 生成一片森林 |
+| `//pumpkins [大小]` | 生成一片南瓜地 |
+| **效用性** |  |
+| `//toggleplace` | 在第一个选择点与你的位置之间切换 |
+| `//fill <方块> <半径> [深度]` | 填充一个洞 |
+| `//fillr <方块> <半径>` | 以递归模式填充完全一个洞 |
+| `//drain <半径>` | 吸干附近的水或岩浆 |
+| `//fixwater <半径>` | 平整附近的水面 |
+| `//fixlava <半径>` | 平整附近的岩浆表面 |
+| `//removeabove [大小] [高度]` | 移除你上方的方块 |
+| `//removebelow [大小] [高度]` | 移除你下方的方块 |
+| `//replacenear <大小> <从方块ID> <到方块ID>` | 替换附近的方块 |
+| `//removenear [方块] [范围]` | 移除附近的方块 |
+| `//snow [半径]` | 模拟降雪 |
+| `//thaw [半径]` | 融化附近的积雪 |
+| `//ex [范围]` | 扑灭附近的火焰 |
+| `//butcher [半径]` | 杀死附近的生物 |
+| `//remove <种类> <范围>` | 清除附近的实体，种类有"items"(物品)，"arrows"(箭)，"boats"(船)，"minecarts"(矿车)，"tnt"或"xp"(经验球) |
+| `//green` | 绿化附近 |

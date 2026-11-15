@@ -1,0 +1,11 @@
+{
+  "title": "Midori's Dream",
+  "pages": [
+    "midori-dream-introduction",
+    "midori-update-log",
+    "faq",
+    "midori-commands",
+    "dom-help"
+  ],
+  "description": "Midori's Dream 整合包文档"
+}

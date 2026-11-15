@@ -1,0 +1,60 @@
+---
+title: "启动面板"
+author: "阿呆皮革厂"
+license: "CC BY-NC-SA 4.0"
+---
+## 警告
+
+为了您的数据安全,请务必仔细阅读文档,在进行敏感操作前请进行数据备份!
+
+## 初次启动
+
+初次启动镜像后,等待约30s,随后强制关机
+
+此时./simpfunPanel文件夹下会生成配置文件config.json
+
+该文件主要内容如下:
+
+```json
+{
+  "addr": ":28983",
+  "dataDir": "./data",
+  "instancesDir": "./instances",
+  "archiveDir": "./archives",
+  "terminalShell": "",
+  "adminUser": "admin_xxxx",
+  "adminPassword": "admin123456789xxxxxxx",
+  "sessionSecret": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+  "licenseHash": "",
+  "licenseFailCount": 0,
+  "licenseLockUntil": 0,
+  "allowCORS": true,
+  "maxUploadMB": 2048,
+  "maxReadLineBytes": 4194304,
+  "archiveMaxMemoryMB": 4096,
+  "archiveMaxProcs": 1
+}
+```
+
+以下是各配置项用途:
+
+```
+  "addr": ":28983",                                                             # 面板运行的端口
+  "dataDir": "./data",                                                          # 数据储存路径
+  "instancesDir": "./instances",                                                # 面板实例路径
+  "archiveDir": "./archives",                                                   # 归档路径,请不要动
+  "terminalShell": "",                                                          # 终端命令,默认为空请不要动
+  "adminUser": "admin_xxxxx",                                                   # 管理员账户用户名,初次生成配置文件后必须修改
+  "adminPassword": "admin123456789xxxx",                                        # 用户密码,初次生成配置文件后必须修改,请保证密码难以破解
+  "sessionSecret": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",                    # 会话密钥,涉及数据安全,严禁外传
+  "licenseHash": "",                                                            # 测试接口,乱填可能导致面板功能异常,请留空
+  "licenseFailCount": 0,                                                        # 测试接口,乱填可能导致面板功能异常,请留空
+  "licenseLockUntil": 0,                                                        # 测试接口,乱填可能导致面板功能异常,请留空
+  "allowCORS": true,                                                            # 允许跨域,若不清楚用途/无需求请关闭
+  "maxUploadMB": 2048,                                                          # 最大单次上传大小,请不要上传文件夹
+  "maxReadLineBytes": 4194304,                                                  # 测试接口,乱填可能导致面板功能异常,请保留
+  "archiveMaxMemoryMB": 4096,                                                   # 最大归档缓存大小,如有需要可调大
+  "archiveMaxProcs": 1                                                          # 最大解压/压缩逻辑核心数,建议1,最大不超过逻辑核心数-3
+```
+
+进群答案: 9496531829

@@ -1,0 +1,1302 @@
+---
+title: "NeoForge Mixin 完全指南"
+author: "阿呆皮革厂"
+license: "CC BY-NC-SA 4.0"
+---
+* * *
+
+## 目录
+
+1.  [先建立正确认知：Mixin 在系统中的位置](#1-%E5%85%88%E5%BB%BA%E7%AB%8B%E6%AD%A3%E7%A1%AE%E8%AE%A4%E7%9F%A5mixin-%E5%9C%A8%E7%B3%BB%E7%BB%9F%E4%B8%AD%E7%9A%84%E4%BD%8D%E7%BD%AE)
+    
+2.  [从 NeoForge 源码看最小闭环：配置 → Mixin 类 → 业务消费](#2-%E4%BB%8E-neoforge-%E6%BA%90%E7%A0%81%E7%9C%8B%E6%9C%80%E5%B0%8F%E9%97%AD%E7%8E%AF%E9%85%8D%E7%BD%AE--mixin-%E7%B1%BB--%E4%B8%9A%E5%8A%A1%E6%B6%88%E8%B4%B9)
+    
+3.  [底层机制（第一性原理）：类加载、字节码、注入失败的本质](#3-%E5%BA%95%E5%B1%82%E6%9C%BA%E5%88%B6%E7%AC%AC%E4%B8%80%E6%80%A7%E5%8E%9F%E7%90%86%E7%B1%BB%E5%8A%A0%E8%BD%BD%E5%AD%97%E8%8A%82%E7%A0%81%E6%B3%A8%E5%85%A5%E5%A4%B1%E8%B4%A5%E7%9A%84%E6%9C%AC%E8%B4%A8)
+    
+4.  [第二层：先学 Accessor/Invoker（最稳入门）](#4-%E7%AC%AC%E4%BA%8C%E5%B1%82%E5%85%88%E5%AD%A6-accessorinvoker%E6%9C%80%E7%A8%B3%E5%85%A5%E9%97%A8)
+    
+5.  [第三层：@Inject 的完整思维模型（不是“打点”而是“契约”）](#5-%E7%AC%AC%E4%B8%89%E5%B1%82inject-%E7%9A%84%E5%AE%8C%E6%95%B4%E6%80%9D%E7%BB%B4%E6%A8%A1%E5%9E%8B%E4%B8%8D%E6%98%AF%E6%89%93%E7%82%B9%E8%80%8C%E6%98%AF%E5%A5%91%E7%BA%A6)
+    
+6.  [第四层：高风险注入家族与取舍策略](#6-%E7%AC%AC%E5%9B%9B%E5%B1%82%E9%AB%98%E9%A3%8E%E9%99%A9%E6%B3%A8%E5%85%A5%E5%AE%B6%E6%97%8F%E4%B8%8E%E5%8F%96%E8%88%8D%E7%AD%96%E7%95%A5)
+    
+7.  [方法论核心：事件优先，Mixin 兜底](#7-%E6%96%B9%E6%B3%95%E8%AE%BA%E6%A0%B8%E5%BF%83%E4%BA%8B%E4%BB%B6%E4%BC%98%E5%85%88mixin-%E5%85%9C%E5%BA%95)
+    
+8.  [工程化设计：目录分层、命名、失败可观测、升级策略](#8-%E5%B7%A5%E7%A8%8B%E5%8C%96%E8%AE%BE%E8%AE%A1%E7%9B%AE%E5%BD%95%E5%88%86%E5%B1%82%E5%91%BD%E5%90%8D%E5%A4%B1%E8%B4%A5%E5%8F%AF%E8%A7%82%E6%B5%8B%E5%8D%87%E7%BA%A7%E7%AD%96%E7%95%A5)
+    
+9.  [故障诊断：按症状反推根因（实战排障树）](#9-%E6%95%85%E9%9A%9C%E8%AF%8A%E6%96%AD%E6%8C%89%E7%97%87%E7%8A%B6%E5%8F%8D%E6%8E%A8%E6%A0%B9%E5%9B%A0%E5%AE%9E%E6%88%98%E6%8E%92%E9%9A%9C%E6%A0%91)
+    
+10.  [详细实战例子：4 个从 0 可复刻案例（含失败与修复）](#10-%E8%AF%A6%E7%BB%86%E5%AE%9E%E6%88%98%E4%BE%8B%E5%AD%904-%E4%B8%AA%E4%BB%8E-0-%E5%8F%AF%E5%A4%8D%E5%88%BB%E6%A1%88%E4%BE%8B%E5%90%AB%E5%A4%B1%E8%B4%A5%E4%B8%8E%E4%BF%AE%E5%A4%8D)
+     
+11.  [从“能写”到“写稳”](#11-%E4%BB%8E%E8%83%BD%E5%86%99%E5%88%B0%E5%86%99%E7%A8%B3)
+     
+12.  [附录 A：可直接复用的模板与清单](#12-%E9%99%84%E5%BD%95-a%E5%8F%AF%E7%9B%B4%E6%8E%A5%E5%A4%8D%E7%94%A8%E7%9A%84%E6%A8%A1%E6%9D%BF%E4%B8%8E%E6%B8%85%E5%8D%95)
+     
+13.  [附录 B：本文核心源码锚点索引](#13-%E9%99%84%E5%BD%95-b%E6%9C%AC%E6%96%87%E6%A0%B8%E5%BF%83%E6%BA%90%E7%A0%81%E9%94%9A%E7%82%B9%E7%B4%A2%E5%BC%95)
+     
+14.  [附录 C：上线前自检清单（15 条）](#14-%E9%99%84%E5%BD%95-c%E4%B8%8A%E7%BA%BF%E5%89%8D%E8%87%AA%E6%A3%80%E6%B8%85%E5%8D%9515-%E6%9D%A1)
+     
+
+* * *
+
+## 1\. 先建立正确认知：Mixin 在系统中的位置
+
+很多教程会直接讲 `@Inject`（示意），但你必须先知道它在启动流程里做了什么。
+
+### 1.1 Mixin 不是“运行时回调”，而是“类定义前改写”
+
+你可以把 Mixin 理解成：
+
+1.  目标类字节码准备被 JVM 定义；
+    
+2.  Mixin 根据配置找到这个目标类；
+    
+3.  将你的注入规则编译成字节码变更；
+    
+4.  JVM 最终加载的是“改写后”的类。
+    
+
+这意味着：
+
+-   你写的不是普通调用逻辑，而是**类结构变更规则**；
+    
+-   一旦目标方法签名、控制流、局部变量布局变化，注入会失效或行为漂移；
+    
+-   所以 Mixin 本质上是“强能力 + 强约束”。
+    
+
+### 1.2 新手最容易错的认知
+
+-   把 Mixin 当作“想改哪就改哪”的万能钩子；
+    
+-   不区分“访问问题”与“流程问题”；
+    
+-   不建立失败可观测性（注入没命中却不报错）；
+    
+-   把应由事件解决的需求也写成 Mixin。
+    
+
+后文会用 NeoForge 自己的做法证明：**保守、可维护、可替换**才是正确路线。
+
+* * *
+
+## 2\. 从 NeoForge 源码看最小闭环：配置 → Mixin 类 → 业务消费
+
+先看“真实工程如何接入”，别先写代码。
+
+### 2.1 在 mods.toml 声明 Mixin 配置入口
+
+NeoForge 在 `META-INF/neoforge.mods.toml` 中声明：
+
+-   `[[mixins]]` 位于 `neoforge.mods.toml`
+    
+-   `config = "neoforge.mixins.json"` 位于 `neoforge.mods.toml`
+    
+
+这告诉我们：Mixin 激活是**配置驱动**，不是你“new 一个类”触发。
+
+### 2.2 Mixin 配置文件定义约束与作用域
+
+`neoforge.mixins.json` 关键字段：
+
+-   `required: true` `neoforge.mixins.json`
+    
+-   `package: "net.neoforged.neoforge.mixins"` `neoforge.mixins.json`
+    
+-   `mixins: ["BlockEntityTypeAccessor", "MappedRegistryAccessor"]` `neoforge.mixins.json`
+    
+-   `injectors.defaultRequire: 1` `neoforge.mixins.json`
+    
+-   `minVersion: "0.8"` `neoforge.mixins.json`
+    
+
+最关键的是 `defaultRequire = 1`：
+
+> 默认要求注入至少命中一次，避免静默失效。
+
+### 2.3 NeoForge 的 Mixin 风格：Accessor 优先，业务隔离
+
+NeoForge 当前配置只挂两个 Accessor：
+
+-   `BlockEntityTypeAccessor`
+    
+-   `MappedRegistryAccessor`
+    
+
+这是一种非常成熟的策略：
+
+-   Mixin 层只负责“开洞”（访问私有状态）；
+    
+-   业务规则放在事件/Hook 类里执行；
+    
+-   降低冲突面与升级成本。
+    
+
+### 2.4 “开洞”之后如何被业务消费
+
+#### 案例 A：修改 `BlockEntityType#validBlocks`
+
+-   字段是 `private final`，无法直接改；
+    
+-   NeoForge 提供带 `@Mutable` 的 `@Accessor("validBlocks")`；
+    
+-   在 `BlockEntityTypeAddBlocksEvent#modify` 中：
+    
+    -   先复制集合并做类型约束校验 `BlockEntityTypeAddBlocksEvent`
+        
+    -   最后通过 Accessor 写回 `BlockEntityTypeAddBlocksEvent`
+        
+
+#### 案例 B：读取 `MappedRegistry#registrationInfos`
+
+-   Accessor 暴露 map 读取口 `MappedRegistryAccessor`
+    
+-   在 `ServerLifecycleHooks#ensureProperSync` 中进行精确同步修正 `ServerLifecycleHooks`
+    
+
+这就是标准闭环：
+
+`mods.toml` → `mixins.json` → `Accessor 接口` → `业务层校验后消费`。
+
+### 2.5 你的项目落地：最小接入清单（照着做就能跑）
+
+很多人卡在“概念懂了，但工程没接通”。这里给一个最小落地序列：
+
+1.  在 `META-INF/mods.toml` 增加 `[[mixins]]`，填入你的配置名（示例见 `neoforge.mods.toml`）
+    
+2.  新建 `xxx.mixins.json`，先只放 **1 个 Accessor**，并设置 `injectors.defaultRequire = 1`（参考 `neoforge.mixins.json`）
+    
+3.  Mixin 类只做“开洞”，不要写业务逻辑（参考 `BlockEntityTypeAccessor`）
+    
+4.  在业务入口触发并消费 Mixin 能力（参考 `BlockEntityTypeAddBlocksEvent#modify`）
+    
+5.  启动后先验证“命中日志 + 行为变化”两件事都成立，再继续加第二个 Mixin
+    
+
+执行策略：**一次只加一个 Mixin 点，逐个验收**。这比一次性上多点注入更容易定位问题。
+
+### 2.6 真正“照着敲”的版本：`mods.toml` 与 `mixins.json` 逐行写法
+
+下面不是概念，是可以直接照抄的写法（把 `examplemod` 换成你的 modid）。
+
+#### 2.6.1 `META-INF/mods.toml` 要加的 2 行
+
+```toml
+[[mixins]]
+    config = "examplemod.mixins.json"
+```
+
+逐行解释：
+
+-   第 1 行 `[[mixins]]`：声明“下面是一个 Mixin 配置入口”。不写这行，后面的 `config` 不会生效。
+    
+-   第 2 行 `config = "examplemod.mixins.json"`：告诉加载器去资源目录找这个 json 文件名。文件名必须一字不差。
+    
+
+对照 NeoForge 写法：`neoforge.mods.toml`。
+
+#### 2.6.2 `examplemod.mixins.json` 逐行模板（建议第一版只放 1 个 Accessor）
+
+```json
+{
+  "required": true,
+  "package": "com.example.examplemod.mixin",
+  "mixins": [
+    "BlockEntityTypeAccessor"
+  ],
+  "client": [],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "minVersion": "0.8"
+}
+```
+
+逐行解释：
+
+1.  `{`：json 开始。
+    
+2.  `"required": true,`：任一 Mixin 应用失败就中止启动（新手建议开着，避免静默失败）。
+    
+3.  `"package": "com.example.examplemod.mixin",`：Mixin 类的包前缀。后续 `mixins` 里写的是“类名”，最终会拼成完整类名。
+    
+4.  `"mixins": [`：双端通用 Mixin 列表。
+    
+5.  `"BlockEntityTypeAccessor"`：实际类名（不带 `.java`、不带包名）。
+    
+6.  `],`：结束数组。
+    
+7.  `"client": [],`：仅客户端 Mixin 列表。先留空，后面做 GUI 注入再放这里。
+    
+8.  `"injectors": {`：注入器全局选项开始。
+    
+9.  `"defaultRequire": 1`：默认至少命中 1 次，命中 0 次就报错。
+    
+10.  `},`：结束注入器选项。
+     
+11.  `"minVersion": "0.8"`：Mixin 版本下限。
+     
+12.  `}`：json 结束。
+     
+
+对照 NeoForge 写法：`neoforge.mixins.json`。
+
+#### 2.6.3 三个抄写高频错误（90% 新手卡在这里）
+
+-   文件名对不上：`mods.toml` 写的是 `examplemod.mixins.json`，但你实际文件叫 `example.mixins.json`。
+    
+-   `package` 对不上：json 里写 `com.example.examplemod.mixin`，但类实际在 `com.example.examplemod.mixins`。
+    
+-   类名对不上：`mixins` 里写 `BlockEntityTypeAccessor`，实际类叫 `BlockEntityTypeAccesor`（少了一个 s）。
+    
+
+* * *
+
+## 3\. 底层机制（第一性原理）：类加载、字节码、注入失败的本质
+
+这一节是“无基础最难但最关键”的部分。
+
+### 3.1 你真正匹配的是“字节码签名”
+
+无论写 `@Inject`（示意）还是 `@Redirect`（示意），最终都要定位到：
+
+-   拥有者类（owner）
+    
+-   方法名（name）
+    
+-   描述符（descriptor）
+    
+
+描述符会精确编码参数和返回值。只要有重载，名字相同但描述符不同，注入点就不是同一个方法。
+
+### 3.2 为什么“看起来没改代码”也会注入失败
+
+因为注入点依赖控制流结构：
+
+-   编译器优化/反编译差异会影响指令布局；
+    
+-   版本升级可能改了局部变量槽位；
+    
+-   某些子类绕开父类调用链。
+    
+
+NeoForge 在 `Screen#render` 上直接留了注释提醒：
+
+-   打在该方法的 mixin 不会影响容器屏幕路径，因 `AbstractContainerScreen#render` 复制逻辑而非 `super` 调用（注释见 `Screen`）。
+    
+
+这就是“调用链认知”比“注解语法”更重要的原因。
+
+### 3.3 `require` / `defaultRequire` 的工程意义
+
+`defaultRequire = 1`（见 `neoforge.mixins.json`）本质是在建立**失败门槛**：
+
+-   命中 0 次 = 立即暴露问题；
+    
+-   避免线上出现“功能悄悄失效”。
+    
+
+方法论：
+
+-   对关键注入保持严格 `require`；
+    
+-   对兼容性分支可适度放宽，但必须补日志。
+    
+
+### 3.4 `@ApiStatus.Internal` 对 Mixin 设计的启发
+
+NeoForge 在 mixin 包显式标注内部性：`package-info.java`。
+
+启发：
+
+-   把 Mixin 视作“内部实现细节层”，不要让外部模块直接依赖它的符号；
+    
+-   对外提供稳定 API/事件，对内可替换 Mixin 实现。
+    
+
+### 3.5 客户端/服务端隔离：避免“一上服务器就炸”
+
+Mixin 目标类如果是客户端类（例如 `Screen`），你要特别注意加载侧：
+
+-   通用（双端）Mixin 放 `mixins` 数组；
+    
+-   仅客户端 Mixin 放 `client` 数组（字段可见 `neoforge.mixins.json`）；
+    
+-   服务端启动不会加载客户端类，放错侧会触发 `ClassNotFoundException/NoClassDefFoundError`。
+    
+
+经验规则：
+
+-   目标类在 `net.minecraft.client.*`：默认按“客户端专用”处理；
+    
+-   目标类在 `net.minecraft.server.*` 或通用包：再按实际调用侧判断；
+    
+-   不确定时，先做最小实验并在 dedicated server 运行一次启动验证。
+    
+
+* * *
+
+## 4\. 第二层：先学 Accessor/Invoker（最稳入门）
+
+### 4.1 Accessor 的本质
+
+Accessor 是“字节码级 getter/setter 生成器”，目标是访问原本不可见的成员。
+
+在 NeoForge 实例中：
+
+-   `@Mixin(BlockEntityType.class)`
+    
+-   `@Accessor("validBlocks")`
+    
+-   setter 方法 `neoforge$setValidBlocks`
+    
+
+### 4.2 为什么需要 `@Mutable`
+
+目标字段是 `private final`：`BlockEntityType#validBlocks`。
+
+若你想通过 Accessor 写它，必须显式声明可变意图：`@Mutable`。
+
+### 4.3 Accessor 不是“直接乱改”，要配业务约束
+
+NeoForge 的正确姿势不是“拿到 setter 就写”，而是：
+
+1.  读取当前合法集 `BlockEntityType#getValidBlocks`
+    
+2.  计算公共父类并校验新增方块合法性 `BlockEntityTypeAddBlocksEvent#addValidBlock`
+    
+3.  通过 Accessor 回写 `BlockEntityTypeAddBlocksEvent#modify`
+    
+
+这就是可维护设计：**权限开口小，规则集中在业务层**。
+
+### 4.4 Invoker（概念说明）
+
+Invoker 适用于“你不想改流程，只想调用私有方法”。
+
+入门建议：
+
+-   先把 Accessor 用熟，再上 Invoker；
+    
+-   仍保持“最小开口原则”：只暴露你必须调用的方法。
+    
+
+* * *
+
+## 5\. 第三层：@Inject 的完整思维模型（不是“打点”而是“契约”）
+
+> 这一节偏方法论，不依赖你当前项目的具体目标方法。
+
+### 5.1 `@Inject` 的四个核心要素
+
+1.  `method`：你改哪个方法（必须精准，建议写到描述符级别）
+    
+2.  `at`：你在方法的哪一个字节码位置注入
+    
+3.  `cancellable`：你是否允许短路原逻辑
+    
+4.  `require/expect`：你允许命中几次
+    
+
+**为什么建议写描述符？**
+
+因为同名重载非常常见。比如 `Screen#keyPressed` 的签名是 `keyPressed(III)Z`，你写 `method = "keyPressed"` 虽然有时能工作，但在重载场景容易匹配歧义。
+
+### 5.2 注入点稳定性排序（经验）
+
+从稳到脆：
+
+1.  `HEAD`
+    
+2.  `RETURN` / `TAIL`
+    
+3.  `INVOKE`
+    
+4.  `INVOKE_ASSIGN`
+    
+5.  `FIELD` / `CONSTANT`
+    
+6.  局部变量捕获（`LocalCapture`）
+    
+
+新手建议：先把前 3 个学透。
+
+### 5.3 `cancellable` 的语义约束
+
+-   不是“我想取消就取消”；
+    
+-   你必须保证取消后，调用方状态仍一致（返回值、副作用、事件顺序）。
+    
+
+如果取消破坏契约，后果通常比“注入失败”更难查。
+
+### 5.4 Slice / Ordinal / Shift 的使用原则
+
+-   `ordinal`：只在目标调用重复且你确认序号稳定时用；
+    
+-   `slice`：用于限定搜索区间，减少误命中；
+    
+-   `shift`：慎用，偏移一个指令都可能在升级后失效。
+    
+
+口诀：
+
+> 能不靠 ordinal，就不要靠 ordinal； 能不靠局部变量，就不要靠局部变量。
+
+### 5.5 方法签名与 `target` 描述符速查（实战最常错）
+
+-   目标方法写法（`method`）：
+    
+    -   简写：`"keyPressed"`
+        
+    -   精确：`"keyPressed(III)Z"`（推荐）
+        
+-   调用点写法（`@At("INVOKE")` 的 `target`）：
+    
+    -   形式：`owner/Name;methodName(args)return`
+        
+    -   示例：`Lnet/minecraft/client/gui/screens/Screen;renderBackground(Lnet/minecraft/client/gui/GuiGraphics;IIF)V`
+        
+
+注意：
+
+-   `owner` 必须是内部名（斜杠分隔）；
+    
+-   参数与返回值必须完整；
+    
+-   任一符号不一致都可能导致 0 命中。
+    
+
+* * *
+
+## 6\. 第四层：高风险注入家族与取舍策略
+
+### 6.1 `@Redirect`（高冲突）
+
+适用：必须替换某个具体调用目标。
+
+风险：
+
+-   热点调用常被多模组同时改；
+    
+-   互斥冲突概率高，维护压力大。
+    
+
+### 6.2 `@ModifyArg` / `@ModifyArgs`
+
+适用：仅修改参数，不替换整个调用。
+
+优点：相对温和。
+
+风险：调用位序变化会导致偏移失效。
+
+### 6.3 `@ModifyVariable`
+
+适用：必须改某个局部变量中间值。
+
+风险：局部变量表最脆，受编译和版本影响大。
+
+### 6.4 `@Overwrite`（最后手段）
+
+适用：无法通过注入点表达目标逻辑。
+
+风险：
+
+-   与任何改同方法的模组几乎必冲突；
+    
+-   版本升级成本最高。
+    
+
+**总原则：**
+
+`Accessor/Invoker` > `Inject` > `ModifyArg` > `Redirect` > `ModifyVariable` > `Overwrite`
+
+* * *
+
+## 7\. 方法论核心：事件优先，Mixin 兜底
+
+这一节是“写稳”的关键，不是语法问题。滥用Mixin是毁灭性的,随时可能在复杂生产环境崩溃。
+
+### 7.1 先找事件：NeoForge 已给很多扩展点
+
+NeoForge 在大量路径通过 Hook + Event 暴露能力，例如：
+
+-   服务端注册后流程中投递 `BlockEntityTypeAddBlocksEvent`
+    
+-   GUI 流程有 `ScreenEvent`
+    
+-   容器屏幕有 `ContainerScreenEvent`
+    
+-   统一行为入口在 `EventHooks`
+    
+
+这说明官方工程思路是：
+
+> 能事件化的，尽量事件化；Mixin 只处理无扩展点的硬场景。
+
+### 7.2 决策树（必须执行）
+
+每个需求都按以下顺序判断：
+
+1.  是否已有 Event？
+    
+2.  是否已有公开 API？
+    
+3.  能否通过注册/数据驱动完成？
+    
+4.  都不行，才做 Mixin。
+    
+
+### 7.3 一个反例对照（为什么先事件）
+
+若你只想在屏幕渲染前后插逻辑，优先走 `ScreenEvent.Render.Pre` / `ScreenEvent.Render.Post`，而不是直接打 `Screen#render` 的 Mixin。
+
+原因很现实：调用链与子类覆盖路径变化时，事件一般更稳。
+
+* * *
+
+## 8\. 工程化设计：目录分层、命名、失败可观测、升级策略
+
+### 8.1 目录分层建议
+
+-   `mixin/`：只放 Mixin 接口/类（技术层）
+    
+-   `hook/` 或 `integration/`：放业务桥接（策略层）
+    
+-   `feature/`：放需求逻辑（领域层）
+    
+
+核心原则：业务不要直接依赖字节码细节。
+
+### 8.2 命名规范
+
+参考 NeoForge 的前缀习惯：`neoforge$setValidBlocks`、`neoforge$getRegistrationInfos`。
+
+建议统一：`modid$功能动作`。
+
+### 8.3 注入失败可观测
+
+至少做到：
+
+-   关键注入严格 `require`；
+    
+-   启动日志明确输出成功/失败路径；
+    
+-   兼容分支有 fallback 日志。
+    
+
+### 8.4 版本升级检查单
+
+每次升版本至少核查：
+
+1.  目标类是否重构；
+    
+2.  目标方法签名是否变化；
+    
+3.  注入点调用链是否变化（父类是否仍被经过）；
+    
+4.  是否新增了事件/API 可替代 Mixin。
+    
+
+### 8.5 冲突管理：`priority`、`@Unique`、降级开关
+
+当你无法避免与其他模组改同一路径时，至少做好三件事：
+
+1.  **显式优先级策略**：避免默认优先级导致“偶发先后顺序”
+    
+2.  **新增成员加** `@Unique`：防止字段/方法名撞车
+    
+3.  **提供可关闭开关**：冲突时允许用户先禁用该注入点
+    
+
+工程建议：把“高风险注入（`Redirect/Overwrite`）”单独做成可配置模块，不要和核心功能强耦合。
+
+* * *
+
+## 9\. 故障诊断：按症状反推根因（实战排障树）
+
+### 症状 A：启动时报“注入未命中”
+
+排查顺序：
+
+1.  配置链是否完整：`mods.toml` → `mixins.json`
+    
+2.  `method` 是否匹配精确签名
+    
+3.  `at` 是否在当前版本仍存在
+    
+4.  `require` 是否与实际命中次数矛盾
+    
+
+### 症状 B：无报错但功能无效
+
+优先怀疑调用链：
+
+-   例如父类方法并未被子类路径调用（参见 `Screen``注释`）
+    
+
+### 症状 C：写字段时报错或不生效
+
+排查：
+
+1.  目标是否 `final`
+    
+2.  setter Accessor 是否带 `@Mutable`
+    
+3.  字段名是否与当前映射一致
+    
+
+### 症状 D：多模组冲突
+
+策略：
+
+-   先降侵入（`Redirect` → `Inject` / `ModifyArg`）
+    
+-   拆分功能点，减少同一点重写
+    
+-   提供配置开关与降级路径
+    
+
+### 症状 E：客户端开发环境正常，专用服崩溃
+
+典型根因：客户端类被服务端加载。
+
+排查：
+
+1.  检查客户端目标类 Mixin 是否错误放入 `mixins` 而非 `client`
+    
+2.  检查业务层是否在通用初始化路径直接引用了 `net.minecraft.client.*`
+    
+3.  在 dedicated server 单独跑一次启动回归，作为发布前必做项
+    
+
+* * *
+
+## 10\. 详细实战例子：4 个从 0 可复刻案例（含失败与修复）
+
+> 这一节专门解决你提出的“要有详细例子”。
+> 
+> 每个例子都按同一方法论展开：
+> 
+> 1.  需求定义
+>     
+> 2.  为什么不用事件/API（或为什么应该先用事件）
+>     
+> 3.  源码定位
+>     
+> 4.  最小可运行写法
+>     
+> 5.  失败表现
+>     
+> 6.  排障步骤
+>     
+> 7.  升级与兼容建议
+>     
+
+### 10.1 例子 A：`@Accessor + @Mutable` 修改 `private final` 字段（最推荐入门）
+
+这个例子完全对照 NeoForge 自己的做法。
+
+#### 10.1.1 需求定义
+
+你要给某个 `BlockEntityType` 动态增加合法方块。
+
+#### 10.1.2 为什么不能直接改
+
+目标字段是 `validBlocks`，而且是 `private final`。
+
+#### 10.1.3 源码定位（先看官方怎么做）
+
+-   Accessor 声明：`BlockEntityTypeAccessor`
+    
+-   安全业务入口：`BlockEntityTypeAddBlocksEvent#modify`
+    
+-   回写动作：`neoforge$setValidBlocks`
+    
+
+#### 10.1.4 最小可复刻实现（4 段代码）
+
+**(1) 在** `mods.toml` **增加 mixins 配置入口**
+
+```toml
+[[mixins]]
+    config = "examplemod.mixins.json"
+```
+
+**(2) 新建** `examplemod.mixins.json`**（建议与** `neoforge.mixins.json` **一样保守）**
+
+```json
+{
+  "required": true,
+  "package": "com.example.examplemod.mixin",
+  "mixins": [
+    "BlockEntityTypeAccessor"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "minVersion": "0.8"
+}
+```
+
+**(3) 写 Accessor（重点是** `@Mutable`**）**
+
+```java
+package com.example.examplemod.mixin;
+
+import java.util.Set;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.entity.BlockEntityType;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Mutable;
+import org.spongepowered.asm.mixin.gen.Accessor;
+
+@Mixin(BlockEntityType.class)
+public interface BlockEntityTypeAccessor {
+    @Mutable
+    @Accessor("validBlocks")
+    void examplemod$setValidBlocks(Set<Block> blocks);
+}
+```
+
+**(4) 在业务层调用（先校验，再回写）**
+
+```java
+package com.example.examplemod.feature;
+
+import java.util.HashSet;
+import java.util.Set;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.entity.BlockEntityType;
+import com.example.examplemod.mixin.BlockEntityTypeAccessor;
+
+public final class BlockEntityTypePatch {
+    public static void addValidBlocks(BlockEntityType<?> type, Block... toAdd) {
+        Set<Block> copy = new HashSet<>(type.getValidBlocks());
+
+        // 这里做你的约束校验：比如类型层级、黑名单、配置开关等
+        for (Block b : toAdd) {
+            copy.add(b);
+        }
+
+        ((BlockEntityTypeAccessor) type).examplemod$setValidBlocks(copy);
+    }
+}
+```
+
+#### 10.1.4.1 Accessor 版本逐行解释（建议边看边对照你的文件）
+
+以上代码逐行含义：
+
+1.  `package com.example.examplemod.mixin;`
+    
+    -   必须和 `mixins.json` 的 `package` 前缀匹配。
+        
+2.  `import java.util.Set;`
+    
+    -   因为目标字段类型是 `Set<Block>`。
+        
+3.  `import net.minecraft.world.level.block.Block;`
+    
+    -   字段元素类型。
+        
+4.  `import net.minecraft.world.level.block.entity.BlockEntityType;`
+    
+    -   `@Mixin` 的目标类。
+        
+5.  `import org.spongepowered.asm.mixin.Mixin;`
+    
+    -   声明这是 Mixin 类。
+        
+6.  `import org.spongepowered.asm.mixin.Mutable;`
+    
+    -   允许改写 `final` 字段（本例必须）。
+        
+7.  `import org.spongepowered.asm.mixin.gen.Accessor;`
+    
+    -   声明 Accessor 方法。
+        
+8.  `@Mixin(BlockEntityType.class)`
+    
+    -   指定你要“开洞”的目标类。
+        
+9.  `public interface BlockEntityTypeAccessor {`
+    
+    -   Accessor 通常写接口，不写实现。
+        
+10.  `@Mutable`
+     
+     -   因为目标字段 `validBlocks` 是 `final`。
+         
+11.  `@Accessor("validBlocks")`
+     
+     -   这里写的是“目标字段名”，不是你想起的别名。
+         
+12.  `void examplemod$setValidBlocks(Set<Block> blocks);`
+     
+     -   方法名可自定义，建议 `modid$` 前缀；参数类型必须和目标字段类型兼容。
+         
+13.  `}`
+     
+     -   接口结束。
+         
+
+#### 10.1.4.2 可直接核对的“通过标准”
+
+-   你能在业务层强转并调用：`((BlockEntityTypeAccessor) type).examplemod$setValidBlocks(copy);`
+    
+-   运行后行为确实变化（不只是没报错）。
+    
+-   字段名和类型与当前映射一致（对照 `BlockEntityType`）。
+    
+
+#### 10.1.5 常见失败表现
+
+-   启动时报字段不可写或访问失败。
+    
+-   运行不报错，但方块行为没有变化。
+    
+
+#### 10.1.6 排障步骤（按顺序）
+
+1.  检查是否忘了 `@Mutable`（对 `final` 字段是硬条件，参照 `BlockEntityTypeAccessor`）。
+    
+2.  检查 `@Accessor("validBlocks")` 名字是否与当前映射一致（参照 `BlockEntityType`）。
+    
+3.  检查你是不是改了临时集合但没写回。
+    
+4.  检查回写时机是否太晚（对象已被下游缓存）。
+    
+
+#### 10.1.7 方法论小结
+
+-   **Accessor 只开权限，不承载业务规则。**
+    
+-   **所有约束放业务层，Mixin 层保持薄。**
+    
+
+* * *
+
+### 10.2 例子 B：`@Inject` 的 HEAD/RETURN 双点模板（观察型注入）
+
+这个例子演示“尽量不改原逻辑”的低风险注入模板。
+
+#### 10.2.1 需求定义
+
+你想监控 GUI 按键路径，统计某个按键是否被界面消费。
+
+目标方法可选 `Screen#keyPressed`。该方法签名是 `(int, int, int) -> boolean`，建议在注解里写成 `keyPressed(III)Z`。
+
+#### 10.2.2 最小可复刻实现
+
+```java
+package com.example.examplemod.mixin;
+
+import net.minecraft.client.gui.screens.Screen;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+
+@Mixin(Screen.class)
+public abstract class ScreenKeyPressedMixin {
+
+    @Inject(method = "keyPressed(III)Z", at = @At("HEAD"), require = 1)
+    private void examplemod$onKeyPressedHead(int keyCode, int scanCode, int modifiers, CallbackInfoReturnable<Boolean> cir) {
+        // 只记录，不改返回值
+        // LOGGER.debug("HEAD keyPressed keyCode={}", keyCode);
+    }
+
+    @Inject(method = "keyPressed(III)Z", at = @At("RETURN"), require = 1)
+    private void examplemod$onKeyPressedReturn(int keyCode, int scanCode, int modifiers, CallbackInfoReturnable<Boolean> cir) {
+        boolean consumed = cir.getReturnValue();
+        // LOGGER.debug("RETURN keyPressed consumed={}", consumed);
+    }
+}
+```
+
+#### 10.2.2.1 `@Inject` 版本逐行解释（HEAD/RETURN 双点）
+
+以第一段 HEAD 注入为例，逐行看：
+
+1.  `@Mixin(Screen.class)`
+    
+    -   目标类是 `Screen`。这是客户端类，记得放 `client` 侧列表。
+        
+2.  `public abstract class ScreenKeyPressedMixin {`
+    
+    -   注入类常用 `abstract class`。
+        
+3.  `@Inject(method = "keyPressed(III)Z", at = @At("HEAD"), require = 1)`
+    
+    -   `method = "keyPressed(III)Z"`：精确目标方法签名；
+        
+    -   `at = @At("HEAD")`：方法开头注入；
+        
+    -   `require = 1`：必须命中一次，否则直接报错。
+        
+4.  `private void examplemod$onKeyPressedHead(int keyCode, int scanCode, int modifiers, CallbackInfoReturnable<Boolean> cir)`
+    
+    -   前 3 个参数必须与目标方法入参顺序一致；
+        
+    -   返回值是 `boolean`，所以回调参数用 `CallbackInfoReturnable<Boolean>`。
+        
+5.  方法体中先只打日志，不改返回值
+    
+    -   先确认“能命中”，再加行为改动，排错最稳。
+        
+
+RETURN 注入段的关键点：
+
+-   `at = @At("RETURN")`：在返回前触发；
+    
+-   `cir.getReturnValue()`：拿到原方法结果，适合做统计/审计。
+    
+
+#### 10.2.2.2 `cancellable = true` 的最小口诀
+
+-   只写 `cancellable = true` 不会自动取消；
+    
+-   你必须显式 `cir.setReturnValue(...)`（或 `cir.cancel()`，对 `void` 方法常用）；
+    
+-   取消后要保证调用方状态仍合理。
+    
+
+#### 10.2.3 如果你确实要“拦截”
+
+```java
+@Inject(method = "keyPressed(III)Z", at = @At("HEAD"), cancellable = true, require = 1)
+private void examplemod$blockSpecificKey(int keyCode, int scanCode, int modifiers, CallbackInfoReturnable<Boolean> cir) {
+    if (keyCode == 290) { // 示例：F1
+        cir.setReturnValue(true); // 表示已消费
+    }
+}
+```
+
+#### 10.2.4 常见失败表现
+
+-   注入方法签名写错（`CallbackInfoReturnable<Boolean>` 漏了泛型或类型不匹配）。
+    
+-   写了 `cancellable = true` 但没 `setReturnValue`，逻辑并不会中断。
+    
+
+#### 10.2.5 排障步骤
+
+1.  对照目标方法签名 `keyPressed(int,int,int)`。
+    
+2.  `method` 建议写 `keyPressed(III)Z`，避免重载歧义。
+    
+3.  对照返回类型是否匹配 `CallbackInfoReturnable<Boolean>`。
+    
+4.  核查 `require = 1` 是否触发（避免静默未命中）。
+    
+
+#### 10.2.6 方法论小结
+
+-   新手先从“观察型注入”开始，先证明命中，再加行为改动。
+    
+-   先 HEAD/RETURN，后 INVOKE/局部变量捕获。
+    
+
+* * *
+
+### 10.3 例子 C：失败案例——为什么打 `Screen#render` 对容器界面不生效
+
+这个例子是“必须掌握”的反面教材。
+
+#### 10.3.1 错误写法（示例）
+
+```java
+@Mixin(Screen.class)
+public abstract class ScreenRenderMixin {
+    @Inject(method = "render", at = @At("HEAD"), require = 1)
+    private void examplemod$beforeRender(net.minecraft.client.gui.GuiGraphics g, int x, int y, float pt, CallbackInfo ci) {
+        // 你期待所有 Screen 都会经过这里
+    }
+}
+```
+
+#### 10.3.2 为什么会失败
+
+在 `Screen` 源码注释已明确：
+
+-   容器界面走 `AbstractContainerScreen#render` 的复制逻辑；
+    
+-   不是 `super.render(...)` 调用链；
+    
+-   所以你打父类方法，容器路径不会经过。
+    
+
+#### 10.3.3 正解：优先事件，不要硬打 Mixin
+
+-   通用界面前后渲染：`ScreenEvent.Render.Pre`、`ScreenEvent.Render.Post`
+    
+-   容器界面：`ContainerScreenEvent.Render.Background`、`ContainerScreenEvent.Render.Foreground`
+    
+
+示例监听：
+
+```java
+package com.example.examplemod.client;
+
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.neoforge.client.event.ContainerScreenEvent;
+import net.neoforged.neoforge.client.event.ScreenEvent;
+
+public final class GuiRenderHooks {
+
+    @SubscribeEvent
+    public static void onScreenRenderPre(ScreenEvent.Render.Pre event) {
+        // 所有 Screen 的通用渲染前逻辑
+    }
+
+    @SubscribeEvent
+    public static void onContainerForeground(ContainerScreenEvent.Render.Foreground event) {
+        // 容器界面前景层渲染逻辑
+    }
+}
+```
+
+#### 10.3.4 方法论小结
+
+-   先判断调用链，再选注入点。
+    
+-   有官方事件时，事件几乎总是比 Mixin 稳定。
+    
+
+* * *
+
+### 10.4 例子 D：Accessor 读取私有映射并精确改一项（进阶）
+
+这个例子对应 NeoForge 在同步修正场景的做法。
+
+#### 10.4.1 源码锚点
+
+-   Accessor：`MappedRegistryAccessor`
+    
+-   消费点：`ServerLifecycleHooks#ensureProperSync`
+    
+-   实际写入：`neoforge$getRegistrationInfos().put(...)`
+    
+
+#### 10.4.2 最小可复刻实现
+
+```java
+package com.example.examplemod.mixin;
+
+import java.util.Map;
+import net.minecraft.core.MappedRegistry;
+import net.minecraft.core.RegistrationInfo;
+import net.minecraft.resources.ResourceKey;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.gen.Accessor;
+
+@Mixin(MappedRegistry.class)
+public interface MappedRegistryAccessor<T> {
+    @Accessor("registrationInfos")
+    Map<ResourceKey<T>, RegistrationInfo> examplemod$getRegistrationInfos();
+}
+```
+
+```java
+package com.example.examplemod.feature;
+
+import java.util.Optional;
+import net.minecraft.core.Holder;
+import net.minecraft.core.RegistrationInfo;
+import net.minecraft.core.Registry;
+import com.example.examplemod.mixin.MappedRegistryAccessor;
+
+public final class RegistrySyncPatch {
+    public static <T> void patchIfNeeded(boolean modified, Holder.Reference<T> holder, Registry<T> registry) {
+        if (!modified) return;
+
+        Optional<RegistrationInfo> old = registry.registrationInfo(holder.key());
+        old.ifPresent(info -> {
+            RegistrationInfo replacement = new RegistrationInfo(Optional.empty(), info.lifecycle());
+            ((MappedRegistryAccessor<T>) registry).examplemod$getRegistrationInfos().put(holder.key(), replacement);
+        });
+    }
+}
+```
+
+#### 10.4.3 这个例子为什么“进阶”
+
+-   你在改注册表内部状态，影响联机同步语义；
+    
+-   这类修改必须最小化（只改一条，不全量重建）；
+    
+-   必须有强约束触发条件（如 `modified == true`）。
+    
+
+#### 10.4.4 方法论小结
+
+-   进阶 Mixin 不是“写更多注解”，而是“改更少的数据”。
+    
+
+* * *
+
+## 11\. 从“能写”到“写稳”
+
+### 阶段 1：只做 `Accessor`
+
+目标：
+
+-   理解“权限开口”与“业务约束分离”；
+    
+-   复刻 `BlockEntityTypeAccessor` 模式。
+    
+
+### 阶段 2：`@Inject` 的 HEAD/RETURN
+
+目标：
+
+-   不改原行为，只做记录与观察；
+    
+-   学会用 `require` 把失败显式化；
+    
+-   养成写方法描述符（如 `keyPressed(III)Z`）的习惯。
+    
+
+### 阶段 3：受控 `INVOKE` 注入
+
+目标：
+
+-   学会做调用链确认；
+    
+-   能解释“为什么选这个点，而不是另一个点”。
+    
+
+### 阶段 4：兼容性演练
+
+目标：
+
+-   模拟目标方法改签名后的修复；
+    
+-   写一份升级检查报告（不是只改代码）；
+    
+-   进行一次 dedicated server 启动回归，验证侧隔离。
+    
+
+* * *
+
+## 12\. 附录 A：可直接复用的模板与清单
+
+### 12.1 Mixin 方案评审模板
+
+-   需求描述：
+    
+-   为什么不能用事件/API：
+    
+-   目标类/方法：
+    
+-   注入类型选择理由：
+    
+-   失败表现与监控方式：
+    
+-   版本升级检查点：
+    
+
+### 12.2 Accessor 设计清单
+
+-    只暴露必要字段/方法
+    
+-    命名带 `modid$` 前缀
+    
+-    若写 `final` 字段，使用 `@Mutable`
+    
+-    业务层先校验再写回
+    
+
+### 12.3 Inject 设计清单
+
+-    已确认调用链（含子类路径）
+    
+-    注入点是最小作用点
+    
+-    `require` 已设置
+    
+-    取消逻辑不破坏调用契约
+    
+
+* * *
+
+## 13\. 附录 B：本文核心源码锚点索引
+
+-   Mixin 配置入口：`neoforge.mods.toml`
+    
+-   Mixin 配置文件：`neoforge.mixins.json`
+    
+-   Accessor 示例（写 final 字段）：`BlockEntityTypeAccessor`
+    
+-   Accessor 示例（读私有 map）：`MappedRegistryAccessor`
+    
+-   目标字段 `validBlocks`：`BlockEntityType`
+    
+-   安全修改入口：`BlockEntityTypeAddBlocksEvent`
+    
+-   `registrationInfos` 字段：`MappedRegistry`
+    
+-   Accessor 消费点：`ServerLifecycleHooks`
+    
+-   渲染路径注入提醒：`Screen`
+    
+-   `keyPressed` 示例锚点：`Screen#keyPressed`
+    
+-   事件优先的体系样本：`ScreenEvent`、`ContainerScreenEvent`、`EventHooks`
+    
+-   启动后流程投递示例：`GameData#postRegisterEvents`
+    
+-   Mixin 包内部标识：`package-info.java`
+    
+
+* * *
+
+## 14\. 附录 C：上线前自检清单（15 条）
+
+发布前逐条打勾：
+
+1.   需求已证明“事件/API 不足以满足”，不是滥用 Mixin
+    
+2.   每个 Mixin 点都有源码锚点（类、方法、行号）
+    
+3.   `mixins.json` 中关键注入启用了 `defaultRequire` 或显式 `require`
+    
+4.   客户端专用注入已放在 `client`，非客户端环境不会加载
+    
+5.   Accessor/Invoker 不承载业务规则，仅提供访问能力
+    
+6.   业务层有输入校验与回滚/降级路径
+    
+7.   注入点优先选择 HEAD/RETURN，高风险注入有必要性说明
+    
+8.   使用 `ordinal/slice/shift` 的地方附带稳定性理由
+    
+9.   所有取消逻辑（`cancellable`）已验证不破坏调用契约
+    
+10.   与其他模组冲突场景有开关或 fallback
+     
+11.   新增字段/方法命名遵守 `modid$` 前缀（必要时 `@Unique`）
+     
+12.   dedicated server 启动通过（如果含客户端功能，也验证 client）
+     
+13.   关键路径有日志，可区分“未命中”与“命中但业务条件不成立”
+     
+14.   升级检查单已执行（签名、调用链、替代事件/API）
+     
+15.   PR/发布说明中记录了所有高风险注入点与禁用方式
+     
+
+* * *
+
+## 最终总结（请反复看）
+
+真正的 Mixin 能力，不是会写多少注解，而是能长期做对这三件事：
+
+1.  **技术判断**：优先事件/API，Mixin 只做兜底；
+    
+2.  **工程判断**：选最低侵入方案，确保失败可观测；
+    
+3.  **维护判断**：注入点要经得起版本变动和模组冲突。
+    
+
+当你把这三点变成习惯，Mixin 就不再是“玄学补丁”，而是相对可靠的工程工具。

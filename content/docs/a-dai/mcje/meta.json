@@ -1,0 +1,11 @@
+{
+  "title": "从 0 开始的我的世界 Java 版开服教程",
+  "pages": [
+    "readme",
+    "how-to-use-tools",
+    "install-modloaders",
+    "create-start.sh",
+    "edit-server.properties",
+    "introduce-how-to-use-simpfun.cn"
+  ]
+}

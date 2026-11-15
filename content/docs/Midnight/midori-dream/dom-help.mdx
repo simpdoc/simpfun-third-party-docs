@@ -1,0 +1,132 @@
+---
+title: "领地插件使用教程"
+author: "午夜_Midnight"
+license: "CC BY-NC-SA 4.0"
+---
+MineBBS介绍
+
+[https://www.minebbs.com/resources/dominion-res-folia.7933/](https://www.minebbs.com/resources/dominion-res-folia.7933/)
+
+插件官方文档
+
+[https://mc.lunadeer.cn/docs/plugins/dominion/](https://mc.lunadeer.cn/docs/plugins/dominion/)
+
+## 命令列表
+
+[https://doc.ideafox.top/docs/Midnight/Other-Docs/dominion-help](/docs/Midnight/Other-Docs/dominion-help)
+
+## 领地菜单
+
+Dominion 插件有两种不同类型的菜单，分别是 **TUI(聊天栏菜单)** 和 **CUI(传统的箱子菜单)** 。两种菜单类型可以随时切换，想用哪种用哪种！
+
+![](/assets/docs/Midnight/midori-dream/image-MQHv.webp)
+
+![](/assets/docs/Midnight/midori-dream/image-UrkN.webp)
+
+## 创建领地
+
+> **INFO**
+> 
+> 默认情况下，玩家最多可以同时拥有5个领地。
+> 
+> 可以在配置文件 `/plugins/Dominion/limitations/default.yml` 找到下方所示的值更改：
+> 
+> ```
+> amount-all-over-the-world: 5
+> ```
+
+> **提示**
+> 
+> 开始操作前请确认账户内有足够的余额！
+> 
+> ![](/assets/docs/Midnight/midori-dream/image-wmJF.webp)
+
+### 手动圈地(推荐)
+
+1.  手持[木锄](https://zh.minecraft.wiki/w/%E9%94%84?variant=zh-cn)，左键点击方块选择第一个地点，右键点击方块选择第二个地点
+    
+
+![](/assets/docs/Midnight/midori-dream/dom-1.webp)
+
+![](/assets/docs/Midnight/midori-dream/dom-2.webp)
+
+2.  在框选范围完成后，聊天栏中将显示尺寸信息以及创建领地需要花费多少coins
+    
+3.  打开聊天栏，输入 `/dom create 领地名称` 后回车来创建领地
+    
+
+![](/assets/docs/Midnight/midori-dream/dom-3.webp)
+
+![](/assets/docs/Midnight/midori-dream/image-kzZh.webp)
+
+### 自动圈地
+
+1.  打开dom的主菜单，在菜单内选择创建领地：
+    
+
+![](/assets/docs/Midnight/midori-dream/dom-4.webp)
+
+2.  此时插件会要求你输入领地名称，输入后将会自动创建一个20x20x20（半径为10）的领地。
+    
+
+> **TIP**
+> 
+> 自动圈地的半径范围在配置文件 `plugins/Dominion/config.yml` 内更改。
+> 
+> 将红圈内的值更改为想要的值，保存后使用 `/dom reload` 命令或者重启服务器重载。
+> 
+> ![](/assets/docs/Midnight/midori-dream/image-BwEo.webp)
+
+## 管理领地
+
+> **TIP**
+> 
+> 此部分内容将基于CUI(箱子菜单)操作。
+
+1.  输入命令 `/dom` 或者在钟表菜单内打开领地菜单，选择 `管理我的领地` (TUI界面下为`领地列表`)
+    
+
+![](/assets/docs/Midnight/midori-dream/image-OAtz.webp)
+
+2.  选择你要进行操作的领地，左键进入管理页面
+    
+
+![](/assets/docs/Midnight/midori-dream/image-Jbnp.webp)
+
+3.  在管理页面可以选择需要管理的项目
+    
+
+![](/assets/docs/Midnight/midori-dream/dom-5.webp)
+
+![](/assets/docs/Midnight/midori-dream/dom-6.webp)
+
+> **INFO**
+> 
+> 各项内容说明：
+> 
+> 1.  返回领地列表菜单
+>     
+> 2.  鼠标放上去显示领地信息，点击更改领地范围
+>     
+> 3.  配置领地环境规则
+>     
+> 4.  配置领地访客权限
+>     
+> 5.  领地成员管理，在此处向你的领地添加玩家/设置权限
+>     
+> 6.  领地群组管理
+>     
+> 7.  将你所处的位置设置为领地传送点
+>     
+> 8.  重命名领地
+>     
+> 9.  更改玩家进入领地时显示的欢迎信息
+>     
+> 10.  更改玩家离开领地时显示的告别信息
+>      
+> 11.  设置领地在地图上显示的颜色（需要网页地图插件，如bluemap）
+>      
+> 12.  复制当前领地的权限和设置到其他领地
+>      
+> 13.  删除领地
+>

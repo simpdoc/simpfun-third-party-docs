@@ -1,0 +1,242 @@
+---
+title: "服务器整合包启动器 (Server Pack Launcher)镜像使用说明"
+author: "阿呆皮革厂"
+license: "CC BY-NC-SA 4.0"
+---
+## 项目简介
+
+这是一个用于启动Minecraft服务器的Java程序,具有协议验证、多Java版本支持和多种启动模式的功能。
+
+## 功能特性
+
+1\. **多Java版本支持**: 可配置多个Java版本,通过配置文件选择使用的版本
+
+2\. **多种启动模式**:
+
+\- JAR模式: 使用 `java -jar server.jar` 启动
+
+\- SCRIPT模式: 使用 `java @unix_args.txt` 启动(适用于Forge/NeoForge等)
+
+\- DIRECT模式: 直接运行主类
+
+\- FORGEINSTALL模式: 使用 `java -jar forge-installer.jar --installServer` 安装服务端,Forge/NeoForge通用
+
+\- FABRICINSTALL模式: 使用 `java -jar fabric-installer.jar server -mcversion <MC版本> -loader <加载器版本> -downloadMinecraft` 安装服务端
+
+3\. **配置文件管理**: 通过 `launcher.properties` 文件管理所有配置
+
+4\. **自动启动**: 自动构建并执行服务器启动命令
+
+5\. **文档阅读检验**:请自行修改server.properties中的游戏端口以通过检验 端口更改教程请自行参考[https://www.yuque.com/simpfox/simpdoc/serverproperties#](https://www.yuque.com/simpfox/simpdoc/serverproperties#)
+
+### 配置文件说明 (launcher.properties)
+
+```
+# Java版本配置（格式：版本名=路径;版本名=路径）
+
+java.versions=java8=/mise/installs/java/zulu-8/bin/java;java17=/mise/installs/java/zulu-17/bin/java;java21=/mise/installs/java/zulu-21/bin/java
+
+# 当前使用的Java版本（对应上面配置的版本名例如java8）
+
+java.current=java8
+
+# 服务器启动文件名（支持相对路径和绝对路径）
+
+server.file=server.jar
+
+# 服务器工作目录（留空则使用当前目录，支持相对路径和绝对路径，该功能为开发者保留功能，普通用户请留空）
+
+server.workdir=
+
+# 启动模式：JAR（使用-jar）、SCRIPT（使用@文件，如Forge）、DIRECT（直接运行主类）、FORGEINSTALL（安装Forge）、FABRICINSTALL（安装Fabric）
+
+launch.mode=JAR
+
+# Fabric安装使用的MC版本（用于FABRICINSTALL模式）
+
+fabric.mcversion=1.20.1
+
+# Fabric安装使用的加载器版本（用于FABRICINSTALL模式，留空则不附加-loader参数,默认构建最新版）
+
+fabric.loader.version=0.16.0
+
+# JVM内存配置
+
+jvm.memory.min=4G
+
+jvm.memory.max=$((SERVER_MEMORY - 1000))
+
+# 是否使用NoGUI模式(开启将在启动脚本末尾拼接nogui参数)
+
+server.nogui=true
+
+# 自定义JVM参数（用分号分隔）
+
+jvm.args.custom=
+
+# 自定义服务器参数（用分号分隔）
+
+server.args.custom=
+```
+
+\# Java版本配置（格式：版本名=路径;版本名=路径）
+
+java.versions=java8=/mise/installs/java/zulu-8/bin/java;java17=/mise/installs/java/zulu-17/bin/java;java21=/mise/installs/java/zulu-21/bin/java
+
+\# 当前使用的Java版本（对应上面配置的版本名例如java8）
+
+java.current=java8
+
+\# 服务器启动文件名（支持相对路径和绝对路径）
+
+server.file=server.jar
+
+\# 服务器工作目录（留空则使用当前目录，支持相对路径和绝对路径，该功能为开发者保留功能，普通用户请留空）
+
+server.workdir=
+
+\# 启动模式：JAR（使用-jar）、SCRIPT（使用@文件，如Forge）、DIRECT（直接运行主类）、FORGEINSTALL（安装Forge）、FABRICINSTALL（安装Fabric）
+
+launch.mode=JAR
+
+\# Fabric安装使用的MC版本（用于FABRICINSTALL模式）
+
+fabric.mcversion=1.20.1
+
+\# Fabric安装使用的加载器版本（用于FABRICINSTALL模式，留空则不附加-loader参数,默认构建最新版）
+
+fabric.loader.version=0.16.0
+
+\# JVM内存配置
+
+jvm.memory.min=4G
+
+jvm.memory.max=$((SERVER\_MEMORY - 1000))
+
+\# 是否使用NoGUI模式(开启将在启动脚本末尾拼接nogui参数)
+
+server.nogui=true
+
+\# 自定义JVM参数（用分号分隔）
+
+jvm.args.custom=
+
+\# 自定义服务器参数（用分号分隔）
+
+server.args.custom=
+
+### 协议确认
+
+首次运行时,程序会显示使用协议,您需要输入文本以确认
+
+确认后,程序会创建 `.agreement_confirmed` 文件,后续运行将不再提示。
+
+## 启动模式详解
+
+### JAR模式 (launch.mode=JAR)
+
+适用于标准的Minecraft服务器JAR文件。
+
+生成的命令格式:
+
+`java -Xms1G -Xmx2G [JVM参数] -jar server.jar nogui`
+
+### SCRIPT模式 (launch.mode=SCRIPT)
+
+适用于Forge等使用参数文件的服务器。Forge通常会生成 `unix_args.txt` 文件。
+
+生成的命令格式:
+
+`java -Xms1G -Xmx2G [JVM参数] @win/unix_args.txt nogui`
+
+### DIRECT模式 (launch.mode=DIRECT)
+
+直接运行主类,不常用。
+
+生成的命令格式:
+
+`java -Xms1G -Xmx2G [JVM参数] 主类名 nogui`
+
+### FORGEINSTALL模式 (launch.mode=FORGEINSTALL)
+
+用于安装Forge/NeoForge服务端,通常server.file指向Forge安装器。
+
+生成的命令格式:
+
+`java -jar forge-installer.jar --installServer`
+
+### FABRICINSTALL模式 (launch.mode=FABRICINSTALL)
+
+用于安装Fabric服务端,支持指定MC版本和加载器版本(可选)。
+
+生成的命令格式:
+
+`java -jar fabric-installer.jar server -mcversion 1.20.1 -loader 0.15.11 -downloadMinecraft`
+
+如果未配置 `fabric.loader.version`, 将不会追加 `-loader` 参数。
+
+## 故障排除
+
+### 问题: 找不到服务器文件
+
+**解决方案**:
+
+1\. 检查 `server.file` 配置的文件路径是否正确
+
+2\. 如果使用相对路径，确保相对于 `server.workdir` 的路径正确
+
+3\. 如果使用绝对路径，确保文件确实存在于该位置
+
+4\. **Windows**: 检查路径中的反斜杠是否使用双反斜杠 `\\` 或正斜杠 `/`
+
+5\. **Linux**: 检查路径权限，确保程序有读取权限
+
+### 问题: Java版本配置无效
+
+**解决方案**:
+
+1\. 检查Java路径是否正确
+
+2\. **Windows**: 确保路径中的反斜杠使用双反斜杠 `\\` 或使用正斜杠 `/`
+
+3\. **Linux**: 使用正斜杠 `/`，不需要转义
+
+4\. 确保 `java.current` 配置的版本名在 `java.versions` 中存在
+
+5\. 验证Java可执行文件确实存在于指定路径
+
+### 问题: 协议验证失败
+
+**解决方案**: 确保输入的文本完全一致,包括标点符号。如需重新确认,删除 `.agreement_confirmed` 文件。
+
+### 问题: 内存不足
+
+**解决方案**: 修改 `launcher.properties` 中的 `jvm.memory.max` 值。
+
+### 问题: Forge/NeoForge服务器无法启动
+
+**解决方案**:
+
+1\. 确保 `launch.mode=SCRIPT`
+
+2\. 确保 `server.file` 指向正确的参数文件(通常是 `unix_args.txt`)
+
+3\. 确保使用正确的Java版本
+
+## 许可协议
+
+本程序仅供学习和非商业用途使用,禁止用于任何盈利性质的活动。All Rights Reserved.)
+
+该程序仅限在本镜像内使用,禁止分发
+
+## 更新日志
+
+### v1.0.0
+
+\- 支持多Java版本配置
+
+\- 支持多种启动模式(JAR/SCRIPT/DIRECT/INSTALL启动方法)
+
+\- 配置文件管理
+
+\- 协议验证机制
