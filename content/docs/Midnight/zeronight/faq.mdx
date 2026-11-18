@@ -11,23 +11,18 @@ license: "CC BY-NC-SA 4.0"
 
 ## 为什么不支持Java版1.7——1.21.6？
 
-> **警告**
-> 
-> 请尽量使用与服务端相同版本的客户端进入游戏！
+<Callout type="warning" title="警告">
+请尽量使用与服务端相同版本的客户端进入游戏！
+</Callout>
 
 1.  此整合包没有安装ViaRewind（不支持1.7-1.9）；
-    
+
 2.  1.17及以下的版本进入1.18+的服务器会出现一些bug，包括但不限于：
-    
 
--   1.16.5 及以下的客户端不支持 1.17+ 的新世界高度，客户端无法显示和交互 0 层以下的方块和 255 层以上的方块。
-    
-
--   1.16.5 及以下的客户端在 1.17+ 服务器有时物品栏会不同步（幽灵物品）。
-    
+- 1.16.5 及以下的客户端不支持 1.17+ 的新世界高度，客户端无法显示和交互 0 层以下的方块和 255 层以上的方块。
+- 1.16.5 及以下的客户端在 1.17+ 服务器有时物品栏会不同步（幽灵物品）。
 
 3.  新版本的物品特性无法在旧版本游戏内使用是因为ViaVersion**致力于兼容性而不是添加新的特性**。
-    
 
 因此我在viaversion的配置文件里锁死了最低版本为1.21.7，如果你确实有使用低版本的需求，请自行去配置文件删除相关配置。
 
@@ -39,11 +34,11 @@ Geyser这个插件的最新构建永远仅支持最近的几个Minecraft基岩�
 
 ## 在一些情况下BE客户端被识别为了JE客户端是什么情况？
 
-> **TIP**
-> 
-> 在此整合包中，基岩版玩家id前面是加了负号“-”的，例如：`-user114514`
-> 
-> **如果遇到基岩版玩家id前没有负号，那就是触发了此问题。**
+<Callout type="info" title="TIP">
+在此整合包中，基岩版玩家id前面是加了负号“-”的，例如：`-user114514`
+
+**如果遇到基岩版玩家id前没有负号，那就是触发了此问题。**
+</Callout>
 
 此问题的具体表现为：基岩版用户需要重新注册，背包物品丢失，无法使用BE特有功能等。
 
@@ -106,13 +101,13 @@ auth:
 
 ## 不想要登录插件了可以删了吗？
 
-> **警告**
-> 
-> 建议先去看下这个：[【MCJE】使用正确的登录方式保护服务器](https://www.yuque.com/simpfox/simpdoc/mcje-auth-type)
-> 
-> 真的要删掉登录插件？那就接着往下看。
-> 
-> **游戏内账号被他人登录毁号概不负责！**
+<Callout type="warning" title="警告">
+建议先去看下这个：[【MCJE】使用正确的登录方式保护服务器](https://www.yuque.com/simpfox/simpdoc/mcje-auth-type)
+
+真的要删掉登录插件？那就接着往下看。
+
+**游戏内账号被他人登录毁号概不负责！**
+</Callout>
 
 在简幻欢控制台打开文件管理页面，找到`/plugins/`文件夹，将`Authme-*.jar` 删除。
 
@@ -134,9 +129,9 @@ beta 1.4.0.1-：
 
 ## 如何修改家的数量上限
 
-> **提示**
-> 
-> 仅限整合包版本 release 1.2.20+ 使用。
+<Callout type="info" title="提示">
+仅限整合包版本 release 1.2.20+ 使用。
+</Callout>
 
 打开文件管理页面，找到`/plugins/SunLight/modules/homes/settings.yml`文件，找到如下所示的这部分内容，修改红框内数字的值。保存后重启服务器或者使用 `/sunlight reload` 重载。
 
@@ -144,9 +139,9 @@ beta 1.4.0.1-：
 
 ## 没有画廊演示的侧边计分板？
 
-> **TIP**
-> 
-> 由于简幻欢的流量机制问题，侧边计分板现在默认关闭，如果需要可以自行打开。
+<Callout type="info" title="TIP">
+由于简幻欢的流量机制问题，侧边计分板现在默认关闭，如果需要可以自行打开。
+</Callout>
 
 打开文件管理页面，找到`/plugins/TAB/config.yml`文件，找到如下所示的这部分内容，将 enabled 后的`false`改为`true`：
 
@@ -180,19 +175,19 @@ scoreboard:
 
 ## 普通玩家用不了假人？
 
-> **提示**
-> 
-> 仅限整合包版本 v1.4.0.11-beta 及之前的版本使用。
-> 
-> v1.5.0.1-beta 后需自行安装其他假人插件。
-> 
-> 可选择：[https://modrinth.com/plugin/fake-player-plugin-(fpp)](https://modrinth.com/plugin/fake-player-plugin-\(fpp\))
+<Callout type="info" title="提示">
+仅限整合包版本 v1.4.0.11-beta 及之前的版本使用。
 
-> **提示**
-> 
-> Leaves假人文档：[假人 | LeavesMC 文档](https://docs.leavesmc.org/zh_Hans/leaves/reference/fakeplayer)
-> 
-> 第三方镜像文档的镜像：[Leaves 假人文档](/docs/Midnight/Other-Docs/leaves-bot)
+v1.5.0.1-beta 后需自行安装其他假人插件。
+
+可选择：[https://modrinth.com/plugin/fake-player-plugin-(fpp)](https://modrinth.com/plugin/fake-player-plugin-\(fpp\))
+</Callout>
+
+<Callout type="info" title="提示">
+Leaves假人文档：[假人 | LeavesMC 文档](https://docs.leavesmc.org/zh_Hans/leaves/reference/fakeplayer)
+
+第三方镜像文档的镜像：[Leaves 假人文档](/docs/Midnight/other-docs/leaves-bot)
+</Callout>
 
 假人默认只允许有管理员权限的玩家使用。
 
@@ -204,9 +199,9 @@ scoreboard:
 
 ## 启用刷线机
 
-> **提示**
-> 
-> 仅限整合包版本 release 1.2.10~v1.4.0.11-beta 使用。
+<Callout type="info" title="提示">
+仅限整合包版本 release 1.2.10~v1.4.0.11-beta 使用。
+</Callout>
 
 1.21.4+版本的Leaves服务端还原1.21.2之前的刷线机
 
