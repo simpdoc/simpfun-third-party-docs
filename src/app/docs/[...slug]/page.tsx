@@ -1,12 +1,45 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
+import type { Folder as PageTreeFolder, Node as PageTreeNode, Root as PageTreeRoot } from 'fumadocs-core/page-tree';
 import defaultMdxComponents, { createRelativeLink } from 'fumadocs-ui/mdx';
 import { DocsBody, DocsDescription, DocsPage, DocsTitle } from 'fumadocs-ui/layouts/docs/page';
 import { source } from '@/lib/source';
 
+function findFirstPageUrl(node: PageTreeNode): string | undefined {
+  if (node.type === 'page') return node.url;
+  if (node.type !== 'folder') return undefined;
+
+  for (const child of node.children) {
+    const url = findFirstPageUrl(child);
+    if (url) return url;
+  }
+
+  return node.index?.url;
+}
+
+function getRootFolderTarget(slug: string): string | undefined {
+  const tree: PageTreeRoot = source.getPageTree();
+
+  for (const child of tree.children) {
+    if (child.type !== 'folder' || !child.root || child.$ref?.folder !== slug) continue;
+
+    const target = findFirstPageUrl(child);
+    return target ? `${target.replace(/\/$/, '')}/` : undefined;
+  }
+
+  return undefined;
+}
+
 export default async function Page(props: { params: Promise<{ slug: string[] }> }) {
   const { slug } = await props.params;
   const page = source.getPage(slug);
-  if (!page) notFound();
+  if (!page) {
+    if (slug.length === 1) {
+      const target = getRootFolderTarget(slug[0]);
+      if (target) redirect(target);
+    }
+
+    notFound();
+  }
 
   const MDX = page.data.body;
   const { author, license, attributions } = page.data;
@@ -41,5 +74,12 @@ export default async function Page(props: { params: Promise<{ slug: string[] }> 
 }
 
 export function generateStaticParams() {
-  return source.generateParams();
+  const rootFolders = source
+    .getPageTree()
+    .children.filter((node): node is PageTreeFolder => node.type === 'folder' && node.root === true);
+
+  return [
+    ...source.generateParams(),
+    ...rootFolders.flatMap((folder) => (folder.$ref?.folder ? [{ slug: [folder.$ref.folder] }] : [])),
+  ];
 }
